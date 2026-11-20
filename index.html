@@ -46,6 +46,18 @@
     }
 
     .app-shell { width: min(1600px, 100%); margin: 0 auto; padding: 22px clamp(14px, 2.4vw, 34px) 34px; }
+    .app-shell.css-fullscreen {
+      position: fixed; inset: 0; z-index: 40; width: 100vw; height: 100vh; height: 100dvh; max-width: none;
+      margin: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+      padding: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px))
+        max(12px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+      background: var(--bg);
+    }
+    body.css-fullscreen-active { overflow: hidden; }
+    .app-shell.css-fullscreen .topbar {
+      position: sticky; top: 0; z-index: 20; padding: 5px 0 8px;
+      background: rgba(9,13,19,.97); backdrop-filter: blur(12px);
+    }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
     .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
     .brand-mark {
@@ -102,7 +114,10 @@
       margin: 15px; border: 1px solid rgba(178,202,222,.13); border-radius: 15px;
       background: radial-gradient(ellipse at 50% 40%, #18222d 0%, #0b1118 68%, #070b10 100%);
     }
-    .camera-video { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; background: #05080c; }
+    .camera-video {
+      display: none; position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; object-position: center center; z-index: -2; background: #05080c;
+    }
     .stage.has-camera .camera-video { display: block; }
     .camera-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(2,5,8,.50), rgba(2,5,8,.66)); }
     .stage:not(.has-camera) .camera-shade { background: radial-gradient(ellipse at 50% 36%, rgba(35,54,69,.15), rgba(3,7,11,.32) 75%); }
@@ -141,6 +156,12 @@
     .control-deck { margin: 0 15px 15px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; background: rgba(9,15,22,.75); }
     .transport-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
     .transport-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .workflow-actions { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .reading-action-group, .capture-action-group { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+    .capture-action-group { flex: 1 1 245px; }
+    .capture-buttons { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .utility-actions { display: flex; align-items: center; gap: 7px; }
+    .action-caption { max-width: 360px; color: var(--muted); font-size: 9px; line-height: 1.35; }
     .primary-btn, .danger-btn {
       min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px;
       border: 1px solid transparent; border-radius: 11px; font-size: 12px; font-weight: 800; letter-spacing: .01em;
@@ -226,6 +247,9 @@
       .control-deck { margin: 0 8px 8px; padding: 11px; }
       .transport-row { align-items: flex-start; }
       .transport-actions { gap: 6px; }
+      .workflow-actions { gap: 9px; }
+      .capture-action-group { flex-basis: 220px; }
+      .capture-buttons { gap: 6px; }
       .primary-btn, .danger-btn { min-height: 38px; padding: 0 11px; font-size: 11px; }
       .transport-actions .icon-btn { min-width: 38px; padding: 0 10px; }
       .timer-box { min-width: 68px; }
@@ -279,8 +303,16 @@
       .brand-mark { width: 38px; height: 38px; border-radius: 12px; }
       .stage { min-height: 300px; height: min(52vh, 430px); max-height: 430px; margin: 7px; }
       .control-deck { margin: 0 7px 7px; padding: 8px; }
-      .transport-row { align-items: center; gap: 7px; }
+      .transport-row { align-items: stretch; flex-direction: column; gap: 8px; }
       .transport-actions { gap: 5px; }
+      .workflow-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; width: 100%; }
+      .reading-action-group { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+      .capture-action-group { flex: 0 0 auto; width: 100%; gap: 5px; }
+      .capture-buttons { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); width: 100%; gap: 6px; }
+      .capture-buttons .secondary-btn { width: 100%; min-width: 0; }
+      .utility-actions { justify-content: flex-end; }
+      .action-caption { max-width: none; font-size: 9px; }
+      .timer-box { align-self: flex-end; text-align: right; }
       .primary-btn, .danger-btn { min-height: 35px; padding: 0 10px; font-size: 10px; }
       .transport-actions .icon-btn { min-width: 35px; min-height: 35px; padding: 0 8px; }
       .timer-box { min-width: 66px; }
@@ -327,9 +359,9 @@
       </div>
       <div class="top-actions">
         <span class="save-state" title="O rascunho é salvo automaticamente neste navegador"><span class="save-dot"></span><span id="saveStatus">Salvo neste dispositivo</span></span>
-        <button class="ghost-btn" id="fullscreenBtn" type="button" title="Alternar tela cheia (F)">
+        <button class="ghost-btn" id="fullscreenBtn" type="button" title="Alternar tela cheia (F)" aria-pressed="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
-          Tela cheia
+          <span id="fullscreenLabel">Tela cheia</span>
         </button>
       </div>
     </header>
@@ -401,18 +433,36 @@
 
         <div class="control-deck">
           <div class="transport-row">
-            <div class="transport-actions">
-              <button class="primary-btn" id="startPauseBtn" type="button">
-                <svg id="startPauseIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2c-.7.4-1.6-.1-1.6-.9z"/></svg>
-                <span id="startPauseLabel">Iniciar leitura</span>
-              </button>
-              <button class="icon-btn" id="restartBtn" type="button" title="Reiniciar do começo" aria-label="Reiniciar do começo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
-              </button>
-              <button class="danger-btn" id="stopBtn" type="button" title="Parar e abrir opções">
-                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                STOP
-              </button>
+            <div class="transport-actions workflow-actions" aria-label="Controles de leitura e gravação">
+              <div class="reading-action-group">
+                <button class="primary-btn" id="startPauseBtn" type="button" title="Iniciar leitura: apenas rola o texto, sem gravar vídeo">
+                  <svg id="startPauseIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2c-.7.4-1.6-.1-1.6-.9z"/></svg>
+                  <span id="startPauseLabel">Iniciar leitura</span>
+                </button>
+                <span class="action-caption">Somente rolagem do texto · não grava vídeo</span>
+              </div>
+              <div class="capture-action-group">
+                <div class="capture-buttons">
+                  <button class="secondary-btn" id="cameraBtn" type="button" title="Ativar ou desativar apenas a prévia da câmera">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg>
+                    Ativar câmera
+                  </button>
+                  <button class="secondary-btn" id="recordBtn" type="button" title="Iniciar gravação de vídeo pela câmera e microfone">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                    Gravar vídeo
+                  </button>
+                </div>
+                <div class="action-caption" id="cameraNote">Ativar câmera mostra a prévia. A gravação só começa ao tocar em Gravar vídeo.</div>
+              </div>
+              <div class="utility-actions">
+                <button class="icon-btn" id="restartBtn" type="button" title="Reiniciar do começo" aria-label="Reiniciar do começo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+                <button class="danger-btn" id="stopBtn" type="button" title="Parar e abrir opções">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                  STOP
+                </button>
+              </div>
             </div>
             <div class="timer-box"><small>Tempo decorrido</small><strong id="elapsedTimer">00:00</strong></div>
           </div>
@@ -451,19 +501,6 @@
               <label class="toggle-line"><input type="checkbox" id="keepAwakeHint" checked disabled> Leitura independente da câmera</label>
             </div>
           </div>
-          <div class="camera-controls">
-            <div class="camera-controls-left">
-              <button class="secondary-btn" id="cameraBtn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg>
-                Ativar câmera
-              </button>
-              <button class="secondary-btn" id="recordBtn" type="button">
-                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-                Gravar vídeo
-              </button>
-            </div>
-            <div class="camera-note" id="cameraNote">A câmera é opcional. Para gravar, permita câmera e microfone e abra o app em HTTPS ou localhost.</div>
-          </div>
         </div>
       </section>
     </main>
@@ -500,6 +537,7 @@
 
       const $ = (id) => document.getElementById(id);
       const editor = $('scriptEditor');
+      const appShell = document.querySelector('.app-shell');
       const stage = $('stage');
       const viewport = $('prompterViewport');
       const scriptContent = $('scriptContent');
@@ -895,6 +933,7 @@
         stage.classList.remove('has-camera');
         $('cameraHint').style.display = 'flex';
         $('cameraBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg> Ativar câmera';
+        if (!isRecording) $('cameraNote').textContent = 'Ativar câmera mostra a prévia. A gravação só começa ao tocar em Gravar vídeo.';
       }
 
       async function activateCamera() {
@@ -915,14 +954,21 @@
         const width = $('qualitySelect').value === '1080' ? 1920 : 1280;
         const constraints = {
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-          video: { facingMode: { ideal: 'user' }, width: { ideal: width }, height: { ideal: height }, frameRate: { ideal: 30, max: 30 } }
+          video: {
+            facingMode: { ideal: 'user' },
+            width: { ideal: width },
+            height: { ideal: height },
+            frameRate: { ideal: 30, max: 30 },
+            // Não fixa proporção nem amplia a imagem; quando suportado, evita crop-and-scale.
+            resizeMode: { ideal: 'none' }
+          }
         };
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (firstError) {
           // Alguns celulares não aceitam a combinação ideal de resolução/áudio. Tenta o padrão do dispositivo.
           try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: { ideal: 'user' }, resizeMode: { ideal: 'none' } } });
           } catch (secondError) {
             const message = secondError && secondError.name === 'NotAllowedError'
               ? 'Permissão de câmera/microfone negada. Libere o acesso nas configurações do navegador.'
@@ -939,6 +985,7 @@
         $('cameraHint').style.display = 'none';
         $('cameraBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg> Desativar câmera';
         try { await cameraVideo.play(); } catch (error) { console.warn('Prévia da câmera aguardando interação:', error); }
+        $('cameraNote').textContent = 'Prévia ativa. Ainda não há gravação; toque em Gravar vídeo para gravar.';
         showToast('Câmera ativada. A prévia não é gravada até você iniciar a gravação.');
       }
 
@@ -988,7 +1035,7 @@
           isRecording = true;
           recordingStartedAt = Date.now();
           $('recordingBadge').classList.add('active');
-          $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Gravando…';
+          $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Gravando vídeo…';
           $('cameraNote').textContent = 'Gravando vídeo e áudio. Pressione STOP para finalizar e escolher o que fazer.';
           if (!isPlaying) startReading();
           showToast('Gravação iniciada. A rolagem acompanha a leitura.');
@@ -1111,13 +1158,82 @@
         }
       }
 
-      function openFullscreen() {
-        const target = document.documentElement;
-        if (!document.fullscreenElement && target.requestFullscreen) {
-          target.requestFullscreen().catch(() => showToast('O modo de tela cheia não está disponível neste navegador.'));
-        } else if (document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
+      function hasNativeFullscreen() {
+        return Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.webkitIsFullScreen);
+      }
+
+      function isCssFullscreen() {
+        return appShell.classList.contains('css-fullscreen');
+      }
+
+      function updateFullscreenButton() {
+        const active = hasNativeFullscreen() || isCssFullscreen();
+        $('fullscreenLabel').textContent = active ? 'Sair da tela cheia' : 'Tela cheia';
+        $('fullscreenBtn').title = active ? 'Sair da tela cheia (F ou Esc)' : 'Alternar tela cheia (F)';
+        $('fullscreenBtn').setAttribute('aria-pressed', active ? 'true' : 'false');
+        $('fullscreenBtn').setAttribute('aria-label', active ? 'Sair da tela cheia' : 'Ativar tela cheia');
+      }
+
+      function enableCssFullscreen() {
+        appShell.classList.add('css-fullscreen');
+        document.body.classList.add('css-fullscreen-active');
+        updateFullscreenButton();
+        showToast('Modo de tela cheia ativado. Use “Sair da tela cheia” para voltar.');
+      }
+
+      async function exitFullscreenMode() {
+        if (isCssFullscreen()) {
+          appShell.classList.remove('css-fullscreen');
+          document.body.classList.remove('css-fullscreen-active');
         }
+        if (hasNativeFullscreen()) {
+          const exitMethod = document.exitFullscreen || document.webkitExitFullscreen;
+          if (typeof exitMethod === 'function') {
+            try {
+              const result = exitMethod.call(document);
+              if (result && typeof result.then === 'function') await result;
+            } catch (error) {
+              console.warn('Não foi possível sair da tela cheia nativa:', error);
+            }
+          }
+        }
+        updateFullscreenButton();
+      }
+
+      async function tryNativeFullscreen(target, methodName) {
+        if (!target || typeof target[methodName] !== 'function') return false;
+        try {
+          const result = target[methodName]();
+          if (result && typeof result.then === 'function') {
+            await result;
+            return hasNativeFullscreen();
+          }
+          // APIs prefixadas podem retornar void; aguarda o estado nativo atualizar.
+          await new Promise((resolve) => window.setTimeout(resolve, 90));
+          return hasNativeFullscreen();
+        } catch (error) {
+          console.info(`Tela cheia nativa (${methodName}) indisponível; usando modo CSS.`, error);
+          return false;
+        }
+      }
+
+      async function openFullscreen() {
+        if (hasNativeFullscreen() || isCssFullscreen()) {
+          await exitFullscreenMode();
+          return;
+        }
+
+        const target = document.documentElement;
+        const nativeStarted = await tryNativeFullscreen(target, 'requestFullscreen') ||
+          await tryNativeFullscreen(target, 'webkitRequestFullscreen');
+
+        if (nativeStarted) {
+          updateFullscreenButton();
+          return;
+        }
+
+        // Fallback compatível com navegadores móveis sem Fullscreen API funcional.
+        enableCssFullscreen();
       }
 
       // Eventos do editor e dos controles.
@@ -1175,6 +1291,8 @@
       $('cameraBtn').addEventListener('click', activateCamera);
       $('recordBtn').addEventListener('click', startRecording);
       $('fullscreenBtn').addEventListener('click', openFullscreen);
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
       $('saveOutputBtn').addEventListener('click', () => {
         if (lastRecordingBlob && lastRecordingBlob.size) downloadBlob(lastRecordingBlob, getVideoFilename());
         else exportScript();
@@ -1189,6 +1307,11 @@
         if (event.target === stopModal) stopModal.classList.remove('show');
       });
       document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isCssFullscreen()) {
+          event.preventDefault();
+          exitFullscreenMode();
+          return;
+        }
         if (stopModal.classList.contains('show')) {
           if (event.key === 'Escape') stopModal.classList.remove('show');
           return;
@@ -1223,6 +1346,7 @@
       updateReadPosition();
       updateTimer();
       setTransportState();
+      updateFullscreenButton();
       $('saveStatus').textContent = savedScript !== null ? 'Rascunho recuperado' : 'Salvo neste dispositivo';
 
       // Em navegadores móveis, ao rotacionar a tela a faixa permanece na proporção configurada.
