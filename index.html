@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090d13">
   <meta name="description" content="Teleprompter Natural — leitura fluida, gravação opcional e roteiro salvo no próprio dispositivo.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Teleprompter Natural">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-180.png">
   <title>Teleprompter Natural</title>
   <style>
     :root {
@@ -359,14 +365,18 @@
       border: 1px solid rgba(120,213,194,.4); color: var(--accent);
       background: linear-gradient(145deg, rgba(120,213,194,.2), rgba(120,213,194,.045));
       box-shadow: 0 0 0 9px rgba(120,213,194,.035), 0 16px 55px rgba(53,185,157,.16), inset 0 1px 0 rgba(255,255,255,.12);
-      animation: splash-pulse 1.55s ease-in-out infinite;
+      transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      will-change: transform, opacity; animation: splash-logo-motion 1.8s ease-in-out infinite;
     }
     .splash-logo svg { width: 36px; height: 36px; }
     .splash-title { color: #edf3f8; font-size: 23px; font-weight: 780; letter-spacing: -.045em; }
     .splash-title span { color: var(--accent); }
     .splash-subtitle { color: var(--muted); font-size: 11px; letter-spacing: .08em; }
-    @keyframes splash-pulse { 50% { transform: translateY(-4px) scale(1.035); box-shadow: 0 0 0 14px rgba(120,213,194,.02), 0 20px 62px rgba(53,185,157,.22), inset 0 1px 0 rgba(255,255,255,.12); } }
-    @keyframes splash-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes splash-logo-motion {
+      0%, 100% { opacity: .96; transform: translate3d(0, 0, 0) scale(1); }
+      50% { opacity: 1; transform: translate3d(0, -4px, 0) scale(1.035); }
+    }
+    @keyframes splash-rise { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
     /* Revisão do vídeo antes da exportação. */
     .review-modal { width: min(100%, 820px); max-height: calc(100dvh - 28px); overflow-y: auto; padding: 20px; }
@@ -440,7 +450,7 @@
       .footnote { overflow-wrap: anywhere; }
       #stopBtn { touch-action: manipulation; }
 
-      /* A animação mobile usa apenas composição (transform/opacity), sem box-shadow animado. */
+      /* Animação mobile usa somente transform 3D e opacity, com movimento visível e estável. */
       .splash-content {
         transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
         will-change: transform, opacity; animation: splash-mobile-entry .62s ease both;
@@ -448,15 +458,11 @@
       .splash-logo {
         transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
         transform-style: preserve-3d; will-change: transform, opacity;
-        animation: splash-mobile-float 1.8s ease-in-out infinite;
+        animation: splash-logo-motion 1.8s ease-in-out infinite;
       }
       @keyframes splash-mobile-entry {
         from { opacity: 0; transform: translate3d(0, 9px, 0); }
         to { opacity: 1; transform: translate3d(0, 0, 0); }
-      }
-      @keyframes splash-mobile-float {
-        0%, 100% { opacity: 1; transform: translate3d(0, 0, 0); }
-        50% { opacity: .94; transform: translate3d(0, 0, 0); }
       }
     }
     @media (max-width: 520px) {
@@ -510,6 +516,104 @@
       }
     }
 
+
+    /* Acesso por PIN e painel administrativo discreto. */
+    .app-shell.auth-locked { display: none !important; }
+    body.auth-active { overflow: hidden; }
+    .auth-gate {
+      position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center;
+      width: 100vw; min-height: 100vh; min-height: 100dvh; overflow-y: auto;
+      padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      background: radial-gradient(ellipse at 50% 10%, rgba(55,125,139,.17), transparent 46%), #090d13;
+    }
+    .auth-gate.is-hidden { display: none; }
+    .auth-card {
+      width: min(100%, 420px); min-width: 0; padding: 27px 24px 22px; text-align: center;
+      border: 1px solid rgba(187,207,227,.14); border-radius: 22px;
+      background: linear-gradient(180deg, rgba(22,33,45,.98), rgba(12,20,29,.99));
+      box-shadow: 0 25px 80px rgba(0,0,0,.42);
+    }
+    .auth-logo-trigger {
+      display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 15px;
+      border: 1px solid rgba(120,213,194,.34); border-radius: 17px; color: var(--accent);
+      background: linear-gradient(145deg, rgba(120,213,194,.18), rgba(120,213,194,.035));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08); -webkit-tap-highlight-color: transparent;
+    }
+    .auth-logo-trigger svg { width: 28px; height: 28px; }
+    .auth-card h1 { margin: 0; font-size: 22px; letter-spacing: -.04em; }
+    .auth-card h1 span { color: var(--accent); }
+    .auth-intro { margin: 8px 0 20px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .auth-form { display: grid; gap: 10px; text-align: left; }
+    .auth-form label { color: #dce7ef; font-size: 11px; font-weight: 750; }
+    .auth-pin-input, .admin-secret-input {
+      width: 100%; min-width: 0; min-height: 49px; padding: 0 14px; border: 1px solid rgba(160,185,208,.2);
+      border-radius: 12px; color: #f2f7fb; background: #090f16; text-align: center;
+      font-size: 22px; font-weight: 800; letter-spacing: .28em; font-variant-numeric: tabular-nums;
+    }
+    .auth-pin-input::placeholder { color: #536578; letter-spacing: .18em; }
+    .auth-submit {
+      width: 100%; min-height: 46px; border: 0; border-radius: 12px; color: #06231e;
+      background: linear-gradient(135deg, #9ae8d9, #62cbb6); font-size: 13px; font-weight: 850;
+    }
+    .auth-submit:disabled { cursor: wait; opacity: .65; }
+    .auth-message { min-height: 19px; margin: 13px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .auth-message.error { color: #ff9a9a; }
+    .auth-message.success { color: #9ae8d9; }
+    .auth-validity { margin-top: 11px; color: #7f91a4; font-size: 10px; line-height: 1.5; }
+    .auth-credit { margin-top: 19px; color: #64778a; font-size: 10px; line-height: 1.5; }
+    .auth-credit a { color: #91aaa9; text-decoration: none; }
+    .ios-install-hint {
+      margin-top: 16px; padding: 12px; border: 1px solid rgba(120,213,194,.2); border-radius: 12px;
+      color: #cad9e3; background: rgba(120,213,194,.055); text-align: left; font-size: 10px; line-height: 1.55;
+    }
+    .ios-install-hint strong { display: block; margin-bottom: 4px; color: #a5e5d8; font-size: 11px; }
+    .ios-install-hint button { margin-top: 8px; padding: 7px 10px; border: 1px solid rgba(120,213,194,.25); border-radius: 8px; color: #dff7f0; background: rgba(120,213,194,.09); font-size: 10px; font-weight: 700; }
+    .admin-overlay {
+      position: fixed; inset: 0; z-index: 10020; display: none; align-items: center; justify-content: center;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+      overflow-y: auto; background: rgba(2,5,9,.82); backdrop-filter: blur(10px);
+    }
+    .admin-overlay.show { display: flex; }
+    .admin-card {
+      width: min(100%, 760px); max-height: calc(100dvh - 28px); overflow-y: auto; padding: 20px;
+      border: 1px solid rgba(183,207,226,.19); border-radius: 19px;
+      background: linear-gradient(180deg, #182431, #101923); box-shadow: 0 30px 100px rgba(0,0,0,.55);
+    }
+    .admin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+    .admin-head h2 { margin: 0; font-size: 17px; }
+    .admin-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .admin-close { min-width: 32px; min-height: 32px; border: 1px solid var(--border); border-radius: 9px; color: #dce7ef; background: rgba(255,255,255,.04); }
+    .admin-auth-area { display: grid; gap: 10px; max-width: 420px; margin: 10px auto 4px; }
+    .admin-auth-area label, .admin-config label { color: #dce7ef; font-size: 10px; font-weight: 750; }
+    .admin-secret-input { text-align: left; letter-spacing: .08em; font-size: 14px; }
+    .admin-config { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.025); }
+    .admin-config-field { display: grid; gap: 6px; flex: 1 1 160px; min-width: 0; }
+    .admin-config input { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; color: #edf3f8; background: #0b121a; }
+    .admin-btn { min-height: 36px; padding: 0 12px; border: 1px solid rgba(120,213,194,.24); border-radius: 9px; color: #dff7f0; background: rgba(120,213,194,.09); font-size: 10px; font-weight: 800; }
+    .admin-btn:disabled { opacity: .5; cursor: wait; }
+    .admin-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; margin: 13px 0; }
+    .admin-actions h3 { margin: 0; font-size: 13px; }
+    .admin-generated { margin: 12px 0; padding: 13px; border: 1px solid rgba(120,213,194,.28); border-radius: 12px; background: rgba(120,213,194,.07); }
+    .admin-generated small { display: block; color: var(--muted); font-size: 10px; }
+    .admin-generated strong { display: inline-block; margin: 4px 10px 7px 0; color: #a9ecdd; font-size: 25px; letter-spacing: .22em; font-variant-numeric: tabular-nums; }
+    .admin-pin-list { display: grid; gap: 7px; }
+    .admin-pin-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 10px 11px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.025); }
+    .admin-pin-main { min-width: 0; display: grid; gap: 4px; }
+    .admin-pin-main strong { color: #e7f0f6; font-size: 10px; overflow-wrap: anywhere; }
+    .admin-pin-main small { color: var(--muted); font-size: 9px; line-height: 1.45; }
+    .admin-pin-state { display: inline-block; margin-right: 5px; padding: 3px 6px; border-radius: 99px; color: #b7eee2; background: rgba(53,185,157,.12); font-size: 8px; font-weight: 850; }
+    .admin-pin-state.expired { color: #ffce90; background: rgba(241,198,109,.12); }
+    .admin-pin-state.blocked { color: #ffaaaa; background: rgba(250,119,119,.12); }
+    .admin-pin-item .admin-btn { flex: 0 0 auto; min-height: 31px; padding: 0 9px; }
+    .admin-status { min-height: 17px; margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .admin-status.error { color: #ff9a9a; }
+    @media (max-width: 520px) {
+      .auth-card { padding: 22px 17px 19px; border-radius: 18px; }
+      .auth-card h1 { font-size: 20px; }
+      .admin-card { padding: 15px; border-radius: 15px; }
+      .admin-pin-item { align-items: flex-start; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
@@ -525,7 +629,56 @@
       <div class="splash-subtitle">RITMO DE CONVERSA · OLHAR NA CÂMERA</div>
     </div>
   </div>
-  <div class="app-shell">
+
+  <section class="auth-gate" id="authGate" aria-labelledby="authTitle">
+    <div class="auth-card">
+      <button class="auth-logo-trigger" id="authLogoTrigger" type="button" aria-label="Teleprompter Natural">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8 10h8M8 14h5M12 2v3M12 19v3"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <h1 id="authTitle">Teleprompter <span>Natural</span></h1>
+      <p class="auth-intro">Acesso por PIN temporário. Digite o código fornecido pelo administrador para liberar o aplicativo neste dispositivo.</p>
+      <form class="auth-form" id="pinLoginForm">
+        <label for="pinInput">Seu PIN de acesso</label>
+        <input class="auth-pin-input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" placeholder="••••••••" aria-label="PIN de oito dígitos" required>
+        <button class="auth-submit" id="pinLoginBtn" type="submit">Validar PIN e entrar</button>
+      </form>
+      <p class="auth-message" id="authMessage" role="status" aria-live="polite">O período padrão de acesso é de 15 dias a partir da criação do PIN.</p>
+      <div class="ios-install-hint" id="iosInstallHint" hidden>
+        <strong>Instalar no iPhone ou iPad</strong>
+        Para instalar, abra ou copie este endereço no <b>Safari</b>. Toque em <b>Compartilhar</b> (ícone do quadrado com seta para cima) e escolha <b>Adicionar à Tela de Início</b>.
+        <button id="copyAppLinkBtn" type="button">Copiar link do aplicativo</button>
+      </div>
+      <div class="auth-validity">O acesso é validado online. A sessão deste dispositivo será revalidada sempre que o aplicativo for aberto.</div>
+      <div class="auth-credit"><span id="authCurrentYear">2026</span> | Criado e Desenvolvido por Pedro Costa<br><a href="mailto:desenvolvedorpedrocosta@gmail.com">desenvolvedorpedrocosta@gmail.com</a></div>
+    </div>
+  </section>
+
+  <div class="admin-overlay" id="adminOverlay" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+    <div class="admin-card">
+      <div class="admin-head">
+        <div><h2 id="adminTitle">Administração de acessos</h2><p>Área restrita. As ações são registradas na planilha de controle.</p></div>
+        <button class="admin-close" id="adminCloseBtn" type="button" aria-label="Fechar administração">×</button>
+      </div>
+      <div id="adminAuthPanel" class="admin-auth-area">
+        <label for="adminSecretInput">Chave administrativa</label>
+        <input class="admin-secret-input" id="adminSecretInput" type="password" autocomplete="current-password" placeholder="Digite a chave do administrador">
+        <button class="auth-submit" id="adminAuthenticateBtn" type="button">Acessar administração</button>
+      </div>
+      <div id="adminDashboard" hidden>
+        <div class="admin-config">
+          <div class="admin-config-field"><label for="adminValidityDays">Prazo padrão dos novos PINs (dias)</label><input id="adminValidityDays" type="number" min="1" max="3650" value="15"></div>
+          <button class="admin-btn" id="saveDefaultDaysBtn" type="button">Salvar prazo</button>
+          <button class="admin-btn" id="generatePinBtn" type="button">+ Gerar novo PIN</button>
+        </div>
+        <div class="admin-generated" id="adminGeneratedPin" hidden><small>Novo PIN — copie agora; por segurança ele não será exibido novamente.</small><strong id="adminGeneratedPinValue"></strong><button class="admin-btn" id="copyGeneratedPinBtn" type="button">Copiar PIN</button><small id="adminGeneratedPinExpiry"></small></div>
+        <div class="admin-actions"><h3>PINs cadastrados</h3><button class="admin-btn" id="refreshPinsBtn" type="button">Atualizar lista</button></div>
+        <div class="admin-pin-list" id="adminPinList"></div>
+      </div>
+      <p class="admin-status" id="adminStatus" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="app-shell auth-locked">
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
@@ -538,6 +691,7 @@
       </div>
       <div class="top-actions">
         <span class="save-state" title="O rascunho é salvo automaticamente neste navegador"><span class="save-dot"></span><span id="saveStatus">Salvo neste dispositivo</span></span>
+        <button class="ghost-btn" id="logoutBtn" type="button" title="Encerrar sessão deste dispositivo">Sair</button>
         <button class="ghost-btn" id="fullscreenBtn" type="button" title="Alternar tela cheia (F)" aria-pressed="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
           <span id="fullscreenLabel">Tela cheia</span>
@@ -751,6 +905,22 @@
         token: ''     // opcional; configure apenas se o endpoint exigir autenticação
       };
 
+      // Cole aqui a URL /exec do Web App publicado no Google Apps Script.
+      // O PIN e a chave administrativa são enviados somente no corpo HTTPS POST, nunca na URL.
+      const ACCESS_API_CONFIG = {
+        endpoint: 'https://script.google.com/macros/s/AKfycbwPUdEW9SA0sNm8Dttg8EGbJyqqNOonsJDJTUmkqHjktKpYnUjs-4I8Ec24_7NScE5BFg/exec',
+        timeoutMs: 15000,
+        resultTimeoutMs: 15000
+      };
+      const AUTH_SESSION_KEY = 'teleprompterNatural.accessSession.v1';
+      const DEVICE_ID_KEY = 'teleprompterNatural.deviceId.v1';
+      let adminSecretInMemory = '';
+      let adminGeneratedPinCurrent = '';
+      let accessRevalidationBusy = false;
+      let accessRevalidationTimer = 0;
+      let authLogoTapCount = 0;
+      let authLogoTapTimer = 0;
+
       const $ = (id) => document.getElementById(id);
       const editor = $('scriptEditor');
       const appShell = document.querySelector('.app-shell');
@@ -818,6 +988,383 @@
           body: JSON.stringify({ app: 'teleprompter-natural', event: eventName, payload, timestamp: new Date().toISOString() }),
           mode: 'cors', keepalive: true
         }).catch((error) => console.warn('Integração opcional não concluída:', error));
+      }
+
+      function isAccessApiConfigured() {
+        return /^https:\/\/script\.google\.com\/macros\/s\//i.test(ACCESS_API_CONFIG.endpoint || '') &&
+          !String(ACCESS_API_CONFIG.endpoint).includes('COLE_AQUI');
+      }
+
+      function randomHex(bytes = 18) {
+        const data = new Uint8Array(bytes);
+        if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(data);
+        else for (let i = 0; i < data.length; i += 1) data[i] = Math.floor(Math.random() * 256);
+        return Array.from(data, (value) => value.toString(16).padStart(2, '0')).join('');
+      }
+
+      function getClientDeviceId() {
+        let id = safeReadStorage(DEVICE_ID_KEY);
+        if (!id) {
+          id = randomHex(16);
+          safeWriteStorage(DEVICE_ID_KEY, id);
+        }
+        return id;
+      }
+
+      function delay(milliseconds) {
+        return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+      }
+
+      function readApiResultJsonp(requestId) {
+        return new Promise((resolve, reject) => {
+          const callbackName = `__tpApiCb_${requestId}`;
+          const script = document.createElement('script');
+          let finished = false;
+          const timer = window.setTimeout(() => finish(new Error('Tempo esgotado aguardando a confirmação da API.')), 7000);
+          function finish(error, result) {
+            if (finished) return;
+            finished = true;
+            window.clearTimeout(timer);
+            try { delete window[callbackName]; } catch (cleanupError) { window[callbackName] = undefined; }
+            script.remove();
+            if (error) reject(error); else resolve(result);
+          }
+          window[callbackName] = (result) => finish(null, result);
+          script.onerror = () => finish(new Error('Não foi possível consultar o retorno da API.'));
+          const separator = ACCESS_API_CONFIG.endpoint.includes('?') ? '&' : '?';
+          script.src = `${ACCESS_API_CONFIG.endpoint}${separator}action=result&rid=${encodeURIComponent(requestId)}&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+          document.head.appendChild(script);
+        });
+      }
+
+      // Apps Script ContentService redireciona a resposta para script.googleusercontent.com.
+      // Enviamos POST simples text/plain em no-cors e lemos apenas o resultado JSONP de uso único,
+      // identificado por um requestId aleatório. PIN/chave nunca entram em query string.
+      async function callAccessApi(action, payload = {}) {
+        if (!isAccessApiConfigured()) throw new Error('A API de acesso ainda não foi configurada pelo administrador.');
+        const requestId = randomHex(20);
+        const body = JSON.stringify({
+          action,
+          requestId,
+          deviceId: getClientDeviceId(),
+          clientTime: new Date().toISOString(),
+          ...payload
+        });
+        const postPromise = fetch(ACCESS_API_CONFIG.endpoint, {
+          method: 'POST',
+          mode: 'no-cors',
+          credentials: 'omit',
+          cache: 'no-store',
+          redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+          body
+        });
+        // Mesmo que a resposta POST seja opaca, o processamento do servidor é consultado pelo requestId.
+        await Promise.race([
+          postPromise.catch(() => undefined),
+          delay(ACCESS_API_CONFIG.timeoutMs).then(() => undefined)
+        ]);
+
+        const startedAt = Date.now();
+        let lastError = null;
+        while (Date.now() - startedAt < ACCESS_API_CONFIG.resultTimeoutMs) {
+          try {
+            const result = await readApiResultJsonp(requestId);
+            if (result && result.ready && result.payload) return result.payload;
+          } catch (error) {
+            lastError = error;
+          }
+          await delay(350);
+        }
+        throw lastError || new Error('O servidor não confirmou a operação. Verifique a publicação da API e tente novamente.');
+      }
+
+      function setAuthMessage(message, type = '') {
+        const element = $('authMessage');
+        element.textContent = message || '';
+        element.classList.toggle('error', type === 'error');
+        element.classList.toggle('success', type === 'success');
+      }
+
+      function unlockTeleprompter(session) {
+        if (session && session.sessionToken) safeWriteStorage(AUTH_SESSION_KEY, session.sessionToken);
+        $('authGate').classList.add('is-hidden');
+        appShell.classList.remove('auth-locked');
+        document.body.classList.remove('auth-active');
+        $('saveStatus').textContent = 'Acesso validado';
+        window.clearInterval(accessRevalidationTimer);
+        accessRevalidationTimer = window.setInterval(revalidateActiveSession, 5 * 60 * 1000);
+      }
+
+      function lockTeleprompter(message = '') {
+        window.clearInterval(accessRevalidationTimer);
+        accessRevalidationTimer = 0;
+        appShell.classList.add('auth-locked');
+        $('authGate').classList.remove('is-hidden');
+        document.body.classList.add('auth-active');
+        $('pinInput').value = '';
+        $('pinLoginBtn').disabled = false;
+        if (message) setAuthMessage(message, 'error');
+        if (isPlaying) {
+          isPlaying = false;
+          cancelAnimationFrame(animationFrame);
+          setTransportState();
+        }
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          mediaStream = null;
+          cameraVideo.srcObject = null;
+          stage.classList.remove('has-camera');
+        }
+        if (hasNativeFullscreen() || isCssFullscreen()) exitFullscreenMode();
+      }
+
+      async function bootstrapAccessGate() {
+        document.body.classList.add('auth-active');
+        $('authCurrentYear').textContent = String(new Date().getFullYear());
+        const savedToken = safeReadStorage(AUTH_SESSION_KEY);
+        if (!isAccessApiConfigured()) {
+          setAuthMessage('A configuração inicial ainda está pendente: o administrador precisa publicar a API do Apps Script e informar a URL /exec no index.html.', 'error');
+          return;
+        }
+        if (!savedToken) {
+          setAuthMessage('Digite o PIN de oito dígitos fornecido pelo administrador. O prazo padrão é de 15 dias.');
+          return;
+        }
+        setAuthMessage('Revalidando sua sessão com o servidor…');
+        $('pinLoginBtn').disabled = true;
+        try {
+          const result = await callAccessApi('validateSession', { sessionToken: savedToken });
+          if (result && result.ok && result.authenticated) {
+            unlockTeleprompter({ sessionToken: savedToken, expiresAt: result.expiresAt });
+          } else {
+            safeWriteStorage(AUTH_SESSION_KEY, '');
+            try { localStorage.removeItem(AUTH_SESSION_KEY); } catch (error) { /* storage indisponível */ }
+            setAuthMessage((result && result.message) || 'Sua sessão não está mais válida. Digite um PIN ativo para entrar.', 'error');
+          }
+        } catch (error) {
+          setAuthMessage(`${error.message || 'Não foi possível revalidar a sessão.'} Conecte-se à internet para validar o acesso.`, 'error');
+        } finally {
+          $('pinLoginBtn').disabled = false;
+        }
+      }
+
+      async function submitPinLogin(event) {
+        event.preventDefault();
+        const pin = $('pinInput').value.replace(/\D/g, '');
+        if (!/^\d{8}$/.test(pin)) {
+          setAuthMessage('O PIN deve conter exatamente oito números.', 'error');
+          return;
+        }
+        $('pinLoginBtn').disabled = true;
+        setAuthMessage('Validando PIN e período de acesso…');
+        try {
+          const result = await callAccessApi('login', { pin });
+          if (!result || !result.ok || !result.authenticated || !result.sessionToken) {
+            setAuthMessage((result && result.message) || 'Não foi possível validar este PIN.', 'error');
+            return;
+          }
+          $('pinInput').value = '';
+          setAuthMessage('Acesso autorizado. Bem-vindo ao Teleprompter Natural.', 'success');
+          unlockTeleprompter(result);
+        } catch (error) {
+          setAuthMessage(error.message || 'Falha de comunicação com o servidor. Tente novamente.', 'error');
+        } finally {
+          $('pinLoginBtn').disabled = false;
+        }
+      }
+
+      async function revalidateActiveSession() {
+        if (accessRevalidationBusy || appShell.classList.contains('auth-locked')) return;
+        const token = safeReadStorage(AUTH_SESSION_KEY);
+        if (!token) { lockTeleprompter('A sessão local não foi encontrada. Digite novamente seu PIN.'); return; }
+        accessRevalidationBusy = true;
+        try {
+          const result = await callAccessApi('validateSession', { sessionToken: token });
+          if (!result || !result.ok || !result.authenticated) {
+            try { localStorage.removeItem(AUTH_SESSION_KEY); } catch (error) { /* storage indisponível */ }
+            lockTeleprompter((result && result.message) || 'O acesso não está mais ativo. Solicite um novo PIN ao administrador.');
+          }
+        } catch (error) {
+          // Falha temporária de rede não encerra uma sessão que já foi validada; na próxima abertura será exigida a revalidação.
+          console.warn('Revalidação periódica não concluída:', error);
+        } finally {
+          accessRevalidationBusy = false;
+        }
+      }
+
+      async function logoutAccess() {
+        if (isRecording) {
+          showToast('Finalize a gravação antes de encerrar a sessão.');
+          return;
+        }
+        const token = safeReadStorage(AUTH_SESSION_KEY);
+        if (token && isAccessApiConfigured()) callAccessApi('logout', { sessionToken: token }).catch(() => undefined);
+        try { localStorage.removeItem(AUTH_SESSION_KEY); } catch (error) { /* storage indisponível */ }
+        lockTeleprompter('Sessão encerrada. Digite um PIN ativo para entrar novamente.');
+        $('pinInput').focus({ preventScroll: true });
+      }
+
+      function openAdminPanel() {
+        $('adminOverlay').classList.add('show');
+        $('adminAuthPanel').hidden = false;
+        $('adminDashboard').hidden = true;
+        $('adminSecretInput').value = '';
+        $('adminStatus').textContent = '';
+        $('adminStatus').classList.remove('error');
+        $('adminGeneratedPin').hidden = true;
+        adminSecretInMemory = '';
+        window.setTimeout(() => $('adminSecretInput').focus({ preventScroll: true }), 80);
+      }
+
+      function closeAdminPanel() {
+        $('adminOverlay').classList.remove('show');
+        adminSecretInMemory = '';
+        $('adminSecretInput').value = '';
+      }
+
+      function setAdminStatus(message, isError = false) {
+        $('adminStatus').textContent = message || '';
+        $('adminStatus').classList.toggle('error', isError);
+      }
+
+      async function authenticateAdmin() {
+        const secret = $('adminSecretInput').value;
+        if (!secret) { setAdminStatus('Informe a chave administrativa.', true); return; }
+        $('adminAuthenticateBtn').disabled = true;
+        setAdminStatus('Validando credencial administrativa…');
+        try {
+          const result = await callAccessApi('adminGetData', { adminSecret: secret });
+          if (!result || !result.ok) { setAdminStatus((result && result.message) || 'Credencial não autorizada.', true); return; }
+          adminSecretInMemory = secret;
+          $('adminAuthPanel').hidden = true;
+          $('adminDashboard').hidden = false;
+          $('adminValidityDays').value = String(result.defaultValidityDays || 15);
+          renderAdminPinList(result.pins || []);
+          setAdminStatus('Administração autenticada.');
+        } catch (error) {
+          setAdminStatus(error.message || 'Não foi possível acessar a administração.', true);
+        } finally {
+          $('adminAuthenticateBtn').disabled = false;
+        }
+      }
+
+      function formatAdminDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      }
+
+      function renderAdminPinList(pins) {
+        const list = $('adminPinList');
+        list.replaceChildren();
+        if (!pins.length) {
+          const empty = document.createElement('p');
+          empty.className = 'admin-status';
+          empty.textContent = 'Nenhum PIN cadastrado. Use “Gerar novo PIN” para criar o primeiro acesso.';
+          list.appendChild(empty);
+          return;
+        }
+        pins.forEach((pin) => {
+          const item = document.createElement('div');
+          item.className = 'admin-pin-item';
+          const main = document.createElement('div');
+          main.className = 'admin-pin-main';
+          const title = document.createElement('strong');
+          title.textContent = `PIN ${String(pin.pinId || '').slice(0, 8).toUpperCase()} · ${Number(pin.accessCount || 0)} acesso(s)`;
+          const details = document.createElement('small');
+          details.textContent = `Criado: ${formatAdminDate(pin.createdAt)} · Expira: ${formatAdminDate(pin.expiresAt)} · Último acesso: ${formatAdminDate(pin.lastAccessAt)}`;
+          const badge = document.createElement('span');
+          badge.className = `admin-pin-state${pin.status === 'EXPIRADO' ? ' expired' : pin.status === 'BLOQUEADO' ? ' blocked' : ''}`;
+          badge.textContent = pin.status || '—';
+          main.append(badge, title, details);
+          item.appendChild(main);
+          if (pin.status !== 'EXPIRADO') {
+            const action = document.createElement('button');
+            action.className = 'admin-btn';
+            action.type = 'button';
+            action.textContent = pin.status === 'BLOQUEADO' ? 'Reativar' : 'Bloquear';
+            action.addEventListener('click', () => changePinStatus(pin.pinId, pin.status === 'BLOQUEADO' ? 'ATIVO' : 'BLOQUEADO'));
+            item.appendChild(action);
+          }
+          list.appendChild(item);
+        });
+      }
+
+      async function refreshAdminPins(silent = false) {
+        if (!adminSecretInMemory) return;
+        if (!silent) setAdminStatus('Atualizando PINs…');
+        try {
+          const result = await callAccessApi('adminGetData', { adminSecret: adminSecretInMemory });
+          if (!result || !result.ok) { setAdminStatus((result && result.message) || 'Não foi possível atualizar a lista.', true); return; }
+          $('adminValidityDays').value = String(result.defaultValidityDays || 15);
+          renderAdminPinList(result.pins || []);
+          if (!silent) setAdminStatus('Lista atualizada.');
+        } catch (error) {
+          setAdminStatus(error.message || 'Falha ao atualizar a lista.', true);
+        }
+      }
+
+      async function saveAdminValidity() {
+        const days = Number($('adminValidityDays').value);
+        if (!Number.isInteger(days) || days < 1 || days > 3650) { setAdminStatus('Informe um prazo entre 1 e 3650 dias.', true); return; }
+        $('saveDefaultDaysBtn').disabled = true;
+        try {
+          const result = await callAccessApi('adminSetDefaultDays', { adminSecret: adminSecretInMemory, days });
+          if (!result || !result.ok) { setAdminStatus((result && result.message) || 'Não foi possível salvar o prazo.', true); return; }
+          setAdminStatus(`Prazo padrão atualizado para ${days} dias.`);
+        } catch (error) { setAdminStatus(error.message || 'Falha ao salvar o prazo.', true); }
+        finally { $('saveDefaultDaysBtn').disabled = false; }
+      }
+
+      async function createAdminPin() {
+        const daysValue = Number($('adminValidityDays').value || 0);
+        $('generatePinBtn').disabled = true;
+        setAdminStatus('Gerando PIN e registrando na planilha…');
+        try {
+          const result = await callAccessApi('adminCreatePin', { adminSecret: adminSecretInMemory, days: daysValue || null });
+          if (!result || !result.ok) { setAdminStatus((result && result.message) || 'Não foi possível gerar o PIN.', true); return; }
+          adminGeneratedPinCurrent = result.pin;
+          $('adminGeneratedPinValue').textContent = result.pin;
+          $('adminGeneratedPinExpiry').textContent = `Válido até ${formatAdminDate(result.expiresAt)} · validade de ${result.validityDays} dia(s).`;
+          $('adminGeneratedPin').hidden = false;
+          setAdminStatus('PIN criado. Copie e entregue ao usuário; ele só é exibido agora.');
+          await refreshAdminPins(true);
+        } catch (error) { setAdminStatus(error.message || 'Falha ao gerar PIN.', true); }
+        finally { $('generatePinBtn').disabled = false; }
+      }
+
+      async function changePinStatus(pinId, status) {
+        if (!pinId || !adminSecretInMemory) return;
+        try {
+          const result = await callAccessApi('adminSetPinStatus', { adminSecret: adminSecretInMemory, pinId, status });
+          if (!result || !result.ok) { setAdminStatus((result && result.message) || 'Não foi possível alterar o status.', true); return; }
+          setAdminStatus(`Status atualizado para ${status}.`);
+          await refreshAdminPins(true);
+        } catch (error) { setAdminStatus(error.message || 'Falha ao alterar status.', true); }
+      }
+
+      async function copyTextToClipboard(text) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        } catch (error) { /* usa fallback */ }
+        const helper = document.createElement('textarea');
+        helper.value = text; helper.style.position = 'fixed'; helper.style.opacity = '0';
+        document.body.appendChild(helper); helper.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (error) { copied = false; }
+        helper.remove();
+        return copied;
+      }
+
+      function setupInstallGuidance() {
+        const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isInstalled = Boolean(navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches;
+        $('iosInstallHint').hidden = !(isAppleMobile && !isInstalled);
       }
 
       function formatVideoTime(seconds) {
@@ -1881,6 +2428,39 @@
       $('cameraBtn').addEventListener('click', activateCamera);
       $('recordBtn').addEventListener('click', startRecording);
       $('fullscreenBtn').addEventListener('click', openFullscreen);
+      $('pinLoginForm').addEventListener('submit', submitPinLogin);
+      $('logoutBtn').addEventListener('click', logoutAccess);
+      $('authLogoTrigger').addEventListener('click', () => {
+        authLogoTapCount += 1;
+        window.clearTimeout(authLogoTapTimer);
+        authLogoTapTimer = window.setTimeout(() => { authLogoTapCount = 0; }, 2400);
+        if (authLogoTapCount >= 6) { authLogoTapCount = 0; openAdminPanel(); }
+      });
+      $('adminCloseBtn').addEventListener('click', closeAdminPanel);
+      $('adminOverlay').addEventListener('click', (event) => { if (event.target === $('adminOverlay')) closeAdminPanel(); });
+      $('adminAuthenticateBtn').addEventListener('click', authenticateAdmin);
+      $('adminSecretInput').addEventListener('keydown', (event) => { if (event.key === 'Enter') authenticateAdmin(); });
+      $('saveDefaultDaysBtn').addEventListener('click', saveAdminValidity);
+      $('generatePinBtn').addEventListener('click', createAdminPin);
+      $('refreshPinsBtn').addEventListener('click', () => refreshAdminPins(false));
+      $('copyGeneratedPinBtn').addEventListener('click', async () => {
+        const copied = await copyTextToClipboard(adminGeneratedPinCurrent);
+        setAdminStatus(copied ? 'PIN copiado para a área de transferência.' : 'Não foi possível copiar automaticamente; selecione o PIN e copie manualmente.', !copied);
+      });
+      $('copyAppLinkBtn').addEventListener('click', async () => {
+        const copied = await copyTextToClipboard(window.location.href);
+        $('copyAppLinkBtn').textContent = copied ? 'Link copiado' : 'Selecione e copie o endereço do navegador';
+      });
+      setupInstallGuidance();
+      if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js', { scope: './' }).catch((error) => console.warn('PWA: não foi possível registrar o Service Worker:', error)));
+      }
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !appShell.classList.contains('auth-locked')) revalidateActiveSession(); });
+      document.addEventListener('keydown', (event) => {
+        if (event.ctrlKey && event.altKey && event.shiftKey && event.key.toLowerCase() === 'a') {
+          event.preventDefault(); openAdminPanel();
+        }
+      });
       document.addEventListener('fullscreenchange', updateFullscreenButton);
       document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
       document.addEventListener('fullscreenchange', () => {
@@ -2001,6 +2581,12 @@
           window.setTimeout(() => splashScreen.remove(), 520);
         }
       }, 1700);
+
+      // O acesso fica bloqueado até a API confirmar o PIN ou revalidar a sessão local.
+      bootstrapAccessGate().catch((error) => {
+        console.error('Falha ao inicializar o controle de acesso:', error);
+        setAuthMessage('Não foi possível validar o acesso. Verifique sua conexão e a configuração da API.', 'error');
+      });
 
       // Em navegadores móveis, ao rotacionar a tela a faixa permanece na proporção configurada.
       if ('ResizeObserver' in window) {
