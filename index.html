@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d13">
+  <meta name="description" content="Teleprompter Natural — leitura fluida, gravação opcional e roteiro salvo no próprio dispositivo.">
+  <title>Teleprompter Natural</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090d13;
+      --surface: #111923;
+      --surface-2: #16212d;
+      --surface-3: #1b2937;
+      --border: rgba(187, 207, 227, .12);
+      --muted: #91a2b5;
+      --text: #edf3f8;
+      --accent: #78d5c2;
+      --accent-strong: #35b99d;
+      --warm: #f1c66d;
+      --danger: #fa7777;
+      --read-highlight: #f4d06f;
+      --radius: 18px;
+      --shadow: 0 20px 60px rgba(0, 0, 0, .28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 75% -12%, rgba(55, 125, 139, .16), transparent 42%),
+        radial-gradient(ellipse at 0% 25%, rgba(56, 89, 125, .10), transparent 35%),
+        var(--bg);
+      color: var(--text);
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .app-shell { width: min(1600px, 100%); margin: 0 auto; padding: 22px clamp(14px, 2.4vw, 34px) 34px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand-mark {
+      display: grid; place-items: center; width: 43px; height: 43px; flex: 0 0 auto;
+      border: 1px solid rgba(120, 213, 194, .26); border-radius: 14px;
+      color: var(--accent); background: linear-gradient(145deg, rgba(120, 213, 194, .16), rgba(120, 213, 194, .035));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .brand-mark svg { width: 22px; height: 22px; }
+    .brand-copy h1 { margin: 0; font-size: clamp(17px, 2vw, 21px); letter-spacing: -.035em; font-weight: 720; }
+    .brand-copy p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .save-state { color: var(--muted); font-size: 12px; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .save-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-strong); box-shadow: 0 0 12px rgba(53,185,157,.45); }
+
+    .workspace { display: grid; grid-template-columns: minmax(310px, .82fr) minmax(0, 1.18fr); gap: 18px; align-items: start; }
+    .panel { min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(180deg, rgba(22,33,45,.96), rgba(15,23,32,.98)); box-shadow: var(--shadow); }
+    .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 19px 20px 15px; border-bottom: 1px solid var(--border); }
+    .eyebrow { margin: 0 0 5px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .panel-heading h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+    .panel-heading p { margin: 5px 0 0; max-width: 510px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .editor-tools { display: flex; flex-wrap: wrap; gap: 7px; padding: 13px 18px 9px; }
+    .tool-btn, .ghost-btn, .icon-btn, .secondary-btn {
+      min-height: 35px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 0 11px; border: 1px solid var(--border); border-radius: 10px;
+      background: rgba(255,255,255,.035); color: #dce7ef; font-size: 11px; font-weight: 650;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+    .tool-btn:hover, .ghost-btn:hover, .icon-btn:hover, .secondary-btn:hover { background: rgba(255,255,255,.08); border-color: rgba(181,210,228,.25); }
+    .tool-btn:active, .ghost-btn:active, .icon-btn:active, .secondary-btn:active, .primary-btn:active { transform: translateY(1px); }
+    .tool-btn svg, .ghost-btn svg, .icon-btn svg, .secondary-btn svg, .primary-btn svg { width: 14px; height: 14px; flex: 0 0 auto; }
+    .editor-wrap { padding: 0 18px 16px; }
+    #scriptEditor {
+      display: block; width: 100%; min-height: 440px; max-height: 68vh; resize: vertical;
+      padding: 17px 17px 20px; border: 1px solid rgba(160,185,208,.14); border-radius: 13px;
+      background: #0b1119; color: #e9f0f6; font-size: 14px; line-height: 1.75; letter-spacing: .005em;
+      caret-color: var(--accent); outline: none;
+    }
+    #scriptEditor::placeholder { color: #68798b; }
+    #scriptEditor:focus { border-color: rgba(120,213,194,.55); box-shadow: 0 0 0 3px rgba(120,213,194,.08); }
+    .editor-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 0 19px 17px; }
+    .stats { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; color: var(--muted); font-size: 11px; }
+    .stats strong { color: #dce7ef; font-weight: 700; }
+    .stats .separator { width: 1px; height: 12px; background: var(--border); }
+    .editor-footer-actions { display: flex; gap: 7px; }
+
+    .stage-panel { display: flex; flex-direction: column; }
+    .stage-head-right { display: flex; align-items: center; gap: 7px; }
+    .live-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid rgba(120,213,194,.2); border-radius: 999px; color: #b1e7dc; background: rgba(120,213,194,.07); font-size: 10px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    .live-tag .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-strong); }
+    .stage {
+      --read-offset: 180px;
+      position: relative; isolation: isolate; overflow: hidden; min-height: 540px; height: min(66vh, 760px);
+      margin: 15px; border: 1px solid rgba(178,202,222,.13); border-radius: 15px;
+      background: radial-gradient(ellipse at 50% 40%, #18222d 0%, #0b1118 68%, #070b10 100%);
+    }
+    .camera-video { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; background: #05080c; }
+    .stage.has-camera .camera-video { display: block; }
+    .camera-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(2,5,8,.50), rgba(2,5,8,.66)); }
+    .stage:not(.has-camera) .camera-shade { background: radial-gradient(ellipse at 50% 36%, rgba(35,54,69,.15), rgba(3,7,11,.32) 75%); }
+    .camera-hint { position: absolute; top: 16px; left: 16px; z-index: 2; display: flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: rgba(230,239,247,.72); background: rgba(3,7,11,.52); backdrop-filter: blur(10px); font-size: 10px; }
+    .camera-hint svg { width: 13px; height: 13px; }
+    .camera-status { position: absolute; top: 16px; right: 16px; z-index: 2; display: none; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; color: #fff; background: rgba(181,42,42,.82); font-size: 10px; font-weight: 800; letter-spacing: .07em; }
+    .camera-status.active { display: inline-flex; }
+    .camera-status::before { content: ""; width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: pulse 1.25s infinite; }
+    @keyframes pulse { 50% { opacity: .28; } }
+    .reading-guide { position: absolute; z-index: 3; top: var(--read-offset); left: 50%; width: min(var(--column-width, 72%), 860px); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(120,213,194,.65), transparent); pointer-events: none; opacity: .7; }
+    .reading-guide::before, .reading-guide::after { content: ""; position: absolute; top: -3px; width: 6px; height: 6px; border: 1px solid rgba(120,213,194,.78); border-radius: 50%; background: #0a1117; }
+    .reading-guide::before { left: 0; } .reading-guide::after { right: 0; }
+    .prompter-viewport { position: absolute; inset: 0; z-index: 1; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; scroll-behavior: auto; }
+    .prompter-viewport::-webkit-scrollbar { display: none; }
+    .script-content {
+      width: min(var(--column-width, 72%), 860px); margin: 0 auto; padding: var(--read-offset) 0 75vh;
+      color: rgba(248,251,253,.95); font-size: var(--font-size, 38px); line-height: 1.48; font-weight: 520;
+      letter-spacing: -.022em; text-align: center; text-wrap: pretty; text-shadow: 0 2px 15px rgba(0,0,0,.65);
+      transform-origin: center center;
+    }
+    .script-content p { margin: 0 0 .82em; }
+    .script-content p:empty { min-height: .85em; }
+    .script-content strong { color: #fff; font-weight: 850; }
+    .script-content mark { padding: 0 .12em; border-radius: .16em; background: var(--read-highlight); color: #1b1b16; text-shadow: none; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+    .pause-marker { display: inline-flex; align-items: center; gap: .48em; margin: .35em .15em .65em; padding: .28em .7em; border: 1px solid rgba(241,198,109,.45); border-radius: 999px; color: #ffe2a0; background: rgba(62,48,22,.78); font-size: .40em; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; vertical-align: middle; text-shadow: none; }
+    .pause-marker::before { content: "Ⅱ"; font-size: 1.15em; }
+    .empty-stage { position: absolute; z-index: 2; top: 46%; left: 50%; width: min(80%, 380px); transform: translate(-50%,-50%); text-align: center; color: rgba(208,223,236,.48); pointer-events: none; }
+    .empty-stage svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: .65; }
+    .empty-stage strong { display: block; margin-bottom: 5px; color: rgba(235,243,249,.74); font-size: 14px; }
+    .empty-stage span { font-size: 11px; line-height: 1.55; }
+    .stage.has-script .empty-stage { display: none; }
+    .stage.is-mirrored .script-content, .stage.is-mirrored .camera-video { transform: scaleX(-1); }
+    .stage.is-mirrored .camera-video { object-position: center; }
+    .stage-bottom-hint { position: absolute; z-index: 4; left: 50%; bottom: 13px; transform: translateX(-50%); padding: 6px 10px; border: 1px solid rgba(255,255,255,.09); border-radius: 999px; color: rgba(220,231,240,.48); background: rgba(4,8,12,.48); font-size: 9px; white-space: nowrap; pointer-events: none; }
+
+    .control-deck { margin: 0 15px 15px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; background: rgba(9,15,22,.75); }
+    .transport-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .transport-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .primary-btn, .danger-btn {
+      min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 15px;
+      border: 1px solid transparent; border-radius: 11px; font-size: 12px; font-weight: 800; letter-spacing: .01em;
+      transition: transform .18s ease, filter .18s ease, background .18s ease;
+    }
+    .primary-btn { color: #06231e; background: linear-gradient(135deg, #9ae8d9, #62cbb6); box-shadow: 0 6px 20px rgba(59,190,164,.16); }
+    .primary-btn:hover { filter: brightness(1.07); }
+    .danger-btn { color: #ffe6e6; border-color: rgba(250,119,119,.24); background: rgba(166,48,48,.18); }
+    .danger-btn:hover { background: rgba(166,48,48,.3); }
+    .primary-btn svg, .danger-btn svg { width: 15px; height: 15px; }
+    .timer-box { min-width: 96px; text-align: right; }
+    .timer-box small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+    .timer-box strong { display: block; margin-top: 2px; color: #f4f8fb; font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: .045em; }
+    .control-divider { height: 1px; margin: 14px 0 13px; background: var(--border); }
+    .adjustments { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px 17px; }
+    .setting { min-width: 0; }
+    .setting-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+    .setting label { color: #c3d0dc; font-size: 10px; font-weight: 700; }
+    .speed-stepper { display: inline-flex; align-items: center; gap: 5px; }
+    .step-btn { width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 7px; color: #dce7ef; background: rgba(255,255,255,.04); font-size: 14px; line-height: 1; }
+    .step-btn:hover { border-color: rgba(120,213,194,.35); background: rgba(120,213,194,.09); }
+    .setting output { color: var(--accent); font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; height: 4px; margin: 7px 0 5px; border-radius: 999px; background: #314252; accent-color: var(--accent); cursor: pointer; }
+    .setting select, .setting input[type="number"], .select-control {
+      width: 100%; min-height: 32px; padding: 0 9px; border: 1px solid var(--border); border-radius: 8px; color: #e8f0f6; background: #0b121a; font-size: 11px;
+    }
+    .setting input[type="color"] { width: 100%; height: 33px; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: #0b121a; }
+    .toggle-line { display: flex; align-items: center; gap: 8px; min-height: 33px; color: #d6e1ea; font-size: 11px; }
+    .toggle-line input { accent-color: var(--accent-strong); width: 15px; height: 15px; }
+    .camera-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .camera-controls-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .camera-note { color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+    .footnote { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px; color: #657789; font-size: 10px; line-height: 1.5; }
+    .footnote a { color: #91aaa9; text-decoration: none; }
+    .footnote a:hover { text-decoration: underline; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(2,5,9,.76); backdrop-filter: blur(10px); }
+    .modal-backdrop.show { display: flex; }
+    .modal { width: min(100%, 440px); padding: 22px; border: 1px solid rgba(183,207,226,.19); border-radius: 20px; background: linear-gradient(180deg, #182431, #101923); box-shadow: 0 30px 100px rgba(0,0,0,.55); animation: modal-in .2s ease-out; }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
+    .modal-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 13px; border: 1px solid rgba(120,213,194,.22); border-radius: 14px; color: var(--accent); background: rgba(120,213,194,.08); }
+    .modal-icon svg { width: 21px; height: 21px; }
+    .modal h3 { margin: 0; font-size: 18px; letter-spacing: -.025em; }
+    .modal p { margin: 7px 0 17px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .modal-actions { display: grid; gap: 8px; }
+    .modal-action { width: 100%; min-height: 43px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; border: 1px solid var(--border); border-radius: 11px; color: #e8f0f6; background: rgba(255,255,255,.035); text-align: left; font-size: 12px; font-weight: 750; }
+    .modal-action:hover { background: rgba(255,255,255,.08); border-color: rgba(120,213,194,.32); }
+    .modal-action small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 450; }
+    .modal-action .arrow { color: var(--accent); font-size: 18px; }
+    .modal-close { display: block; margin: 13px auto 0; padding: 7px 12px; border: 0; color: var(--muted); background: transparent; font-size: 11px; }
+    .modal-close:hover { color: #fff; }
+    .toast { position: fixed; z-index: 80; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); max-width: min(420px, calc(100vw - 32px)); padding: 12px 15px; border: 1px solid rgba(120,213,194,.22); border-radius: 12px; color: #eaf7f3; background: #172a2a; box-shadow: 0 12px 40px rgba(0,0,0,.35); font-size: 12px; line-height: 1.45; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .hidden-file { display: none; }
+
+    @media (max-width: 1080px) {
+      .workspace { grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 13px; }
+      .adjustments { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .stage { min-height: 500px; height: 62vh; }
+    }
+    @media (max-width: 820px) {
+      .app-shell { padding: 14px 12px 24px; }
+      .topbar { margin-bottom: 13px; }
+      .workspace { display: flex; flex-direction: column; }
+      .stage-panel { order: 1; width: 100%; }
+      .editor-panel { order: 2; width: 100%; }
+      .stage { min-height: 440px; height: 61vh; max-height: 700px; margin: 10px; }
+      .control-deck { margin: 0 10px 10px; }
+      .panel-heading { padding: 15px 16px 13px; }
+      #scriptEditor { min-height: 310px; max-height: 55vh; }
+      .footnote { padding-top: 8px; }
+    }
+    @media (max-width: 520px) {
+      .brand-copy p { max-width: 210px; font-size: 10px; }
+      .save-state { font-size: 0; gap: 0; }
+      .save-dot { width: 9px; height: 9px; }
+      .top-actions .ghost-btn { min-height: 34px; padding: 0 9px; font-size: 10px; }
+      .stage { min-height: 400px; height: 58vh; margin: 8px; border-radius: 12px; }
+      .camera-hint { top: 10px; left: 10px; font-size: 9px; }
+      .camera-status { top: 10px; right: 10px; }
+      .script-content { line-height: 1.5; }
+      .control-deck { margin: 0 8px 8px; padding: 11px; }
+      .transport-row { align-items: flex-start; }
+      .transport-actions { gap: 6px; }
+      .primary-btn, .danger-btn { min-height: 38px; padding: 0 11px; font-size: 11px; }
+      .transport-actions .icon-btn { min-width: 38px; padding: 0 10px; }
+      .timer-box { min-width: 68px; }
+      .timer-box strong { font-size: 19px; }
+      .adjustments { gap: 10px 12px; }
+      .camera-controls { align-items: flex-start; }
+      .camera-controls-left { width: 100%; }
+      .camera-note { width: 100%; }
+      .editor-tools { padding-inline: 12px; }
+      .tool-btn { min-height: 33px; padding: 0 9px; font-size: 10px; }
+      .editor-wrap { padding-inline: 12px; }
+      .editor-footer { padding-inline: 13px; }
+      .stats { gap: 8px; font-size: 10px; }
+      .footnote { flex-direction: column; gap: 3px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8 10h8M8 14h5M12 2v3M12 19v3"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="brand-copy">
+          <h1>Teleprompter <span style="color:var(--accent)">Natural</span></h1>
+          <p>Ritmo de conversa. Leitura discreta. Olhar próximo à câmera.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="save-state" title="O rascunho é salvo automaticamente neste navegador"><span class="save-dot"></span><span id="saveStatus">Salvo neste dispositivo</span></span>
+        <button class="ghost-btn" id="fullscreenBtn" type="button" title="Alternar tela cheia (F)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></svg>
+          Tela cheia
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel editor-panel" aria-labelledby="editorHeading">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">01 · Preparação</p>
+            <h2 id="editorHeading">Seu roteiro</h2>
+            <p>Escreva como você falaria. Use frases curtas, respirações e palavras-chave para manter a naturalidade.</p>
+          </div>
+        </div>
+        <div class="editor-tools" role="toolbar" aria-label="Formatação do roteiro">
+          <button class="tool-btn" id="boldBtn" type="button" title="Destacar seleção em negrito (Ctrl+B)"><strong>B</strong> Negrito</button>
+          <button class="tool-btn" id="highlightBtn" type="button" title="Destacar seleção com cor"> <span style="color:var(--warm)">✦</span> Palavra-chave</button>
+          <button class="tool-btn" id="pauseBtn" type="button" title="Inserir pausa automática ao cruzar a linha de leitura">Ⅱ Pausa 2s</button>
+          <button class="tool-btn" id="loadFileBtn" type="button" title="Carregar arquivo de texto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+            Carregar .txt
+          </button>
+          <input class="hidden-file" id="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown">
+        </div>
+        <div class="editor-wrap">
+          <textarea id="scriptEditor" spellcheck="true" autocomplete="off" autocapitalize="sentences" placeholder="Comece por aqui…\n\nImagine que você está conversando com alguém. Escreva do jeito que falaria, sem transformar o roteiro em um texto formal demais.\n\nDica: selecione uma expressão e use “Palavra-chave” para destacá-la na leitura. Use “Pausa 2s” para marcar uma respiração."></textarea>
+        </div>
+        <div class="editor-footer">
+          <div class="stats" aria-live="polite">
+            <span><strong id="charCount">0</strong> caracteres</span><span class="separator"></span>
+            <span><strong id="wordCount">0</strong> palavras</span><span class="separator"></span>
+            <span>Fala: <strong id="durationEstimate">00:00</strong></span>
+          </div>
+          <div class="editor-footer-actions">
+            <button class="secondary-btn" id="pasteBtn" type="button" title="Colar texto da área de transferência">Colar</button>
+            <button class="secondary-btn" id="clearBtn" type="button">Limpar</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel stage-panel" aria-labelledby="stageHeading">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">02 · Leitura</p>
+            <h2 id="stageHeading">Palco de leitura</h2>
+            <p>Acompanhe o texto na faixa próxima à câmera. Ajuste a altura para o seu enquadramento.</p>
+          </div>
+          <div class="stage-head-right"><span class="live-tag"><span class="live-dot"></span> Modo natural</span></div>
+        </div>
+
+        <div class="stage" id="stage">
+          <video class="camera-video" id="cameraVideo" autoplay muted playsinline></video>
+          <div class="camera-shade"></div>
+          <div class="camera-hint" id="cameraHint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg>
+            Prévia da câmera opcional
+          </div>
+          <div class="camera-status" id="recordingBadge">REC</div>
+          <div class="reading-guide" aria-hidden="true"></div>
+          <div class="prompter-viewport" id="prompterViewport" tabindex="0" aria-label="Área de leitura do teleprompter">
+            <div class="script-content" id="scriptContent"></div>
+          </div>
+          <div class="empty-stage" id="emptyStage">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
+            <strong>Seu texto aparecerá aqui</strong>
+            <span>Digite ou carregue um roteiro. Depois, pressione Iniciar para acompanhar a rolagem.</span>
+          </div>
+          <div class="stage-bottom-hint">A barra de espaço inicia ou pausa · F alterna tela cheia</div>
+        </div>
+
+        <div class="control-deck">
+          <div class="transport-row">
+            <div class="transport-actions">
+              <button class="primary-btn" id="startPauseBtn" type="button">
+                <svg id="startPauseIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2c-.7.4-1.6-.1-1.6-.9z"/></svg>
+                <span id="startPauseLabel">Iniciar leitura</span>
+              </button>
+              <button class="icon-btn" id="restartBtn" type="button" title="Reiniciar do começo" aria-label="Reiniciar do começo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
+              </button>
+              <button class="danger-btn" id="stopBtn" type="button" title="Parar e abrir opções">
+                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                STOP
+              </button>
+            </div>
+            <div class="timer-box"><small>Tempo decorrido</small><strong id="elapsedTimer">00:00</strong></div>
+          </div>
+          <div class="control-divider"></div>
+          <div class="adjustments">
+            <div class="setting">
+              <div class="setting-head"><label for="speedRange">Velocidade</label><span class="speed-stepper"><button class="step-btn" id="speedDown" type="button" aria-label="Diminuir velocidade">−</button><output id="speedValue">28 px/s</output><button class="step-btn" id="speedUp" type="button" aria-label="Aumentar velocidade">+</button></span></div>
+              <input type="range" id="speedRange" min="5" max="90" step="1" value="28">
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="fontRange">Tamanho da fonte</label><output id="fontValue">38 px</output></div>
+              <input type="range" id="fontRange" min="22" max="68" step="1" value="38">
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="widthRange">Largura do texto</label><output id="widthValue">72%</output></div>
+              <input type="range" id="widthRange" min="42" max="94" step="1" value="72">
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="positionRange">Altura da leitura</label><output id="positionValue">30%</output></div>
+              <input type="range" id="positionRange" min="12" max="58" step="1" value="30">
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="highlightColor">Cor das palavras-chave</label></div>
+              <input type="color" id="highlightColor" value="#f4d06f" aria-label="Cor das palavras-chave">
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="qualitySelect">Qualidade de gravação</label></div>
+              <select id="qualitySelect"><option value="720">720p · recomendada</option><option value="1080">1080p · alta</option></select>
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label>Espelhamento</label></div>
+              <label class="toggle-line"><input type="checkbox" id="mirrorToggle"> Espelhar leitura</label>
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label>Modo de uso</label></div>
+              <label class="toggle-line"><input type="checkbox" id="keepAwakeHint" checked disabled> Leitura independente da câmera</label>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <div class="camera-controls-left">
+              <button class="secondary-btn" id="cameraBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg>
+                Ativar câmera
+              </button>
+              <button class="secondary-btn" id="recordBtn" type="button">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                Gravar vídeo
+              </button>
+            </div>
+            <div class="camera-note" id="cameraNote">A câmera é opcional. Para gravar, permita câmera e microfone e abra o app em HTTPS ou localhost.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footnote">
+      <span>O roteiro fica salvo localmente neste navegador. Não é enviado para um servidor.</span>
+      <span>Atalhos: <strong>Espaço</strong> iniciar/pausar · <strong>R</strong> reiniciar · <strong>F</strong> tela cheia</span>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="stopModal" role="dialog" aria-modal="true" aria-labelledby="stopModalTitle">
+    <div class="modal">
+      <div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg></div>
+      <h3 id="stopModalTitle">O que deseja fazer agora?</h3>
+      <p id="stopModalDescription">A leitura foi interrompida. Seu roteiro permanece no editor e a posição atual foi mantida.</p>
+      <div class="modal-actions">
+        <button class="modal-action" id="saveOutputBtn" type="button"><span><span id="saveOutputTitle">Salvar no dispositivo</span><small id="saveOutputSubtitle">Baixar o vídeo gravado</small></span><span class="arrow">↓</span></button>
+        <button class="modal-action" id="returnOutputBtn" type="button"><span>Manter e voltar à leitura<small>Fechar esta janela e continuar de onde parou</small></span><span class="arrow">↗</span></button>
+        <button class="modal-action" id="shareOutputBtn" type="button"><span>Compartilhar<small>Usar o menu de compartilhamento do dispositivo</small></span><span class="arrow">↗</span></button>
+      </div>
+      <button class="modal-close" id="closeModalBtn" type="button">Fechar e voltar ao editor</button>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'teleprompterNatural.script.v1';
+      const SETTINGS_KEY = 'teleprompterNatural.settings.v1';
+      const NATURAL_SPEED = 28; // pixels por segundo
+      const SPEECH_WPM = 130;   // estimativa de fala calma/conversacional
+
+      const $ = (id) => document.getElementById(id);
+      const editor = $('scriptEditor');
+      const stage = $('stage');
+      const viewport = $('prompterViewport');
+      const scriptContent = $('scriptContent');
+      const cameraVideo = $('cameraVideo');
+      const stopModal = $('stopModal');
+      const toast = $('toast');
+
+      let isPlaying = false;
+      let animationFrame = 0;
+      let lastFrameTime = 0;
+      let elapsedMs = 0;
+      let runStartedAt = 0;
+      let lastTimerPaint = 0;
+      let automaticPauseUntil = 0;
+      let triggeredPauseMarkers = new WeakSet();
+      let saveTimer = 0;
+      let toastTimer = 0;
+      let mediaStream = null;
+      let mediaRecorder = null;
+      let recordedChunks = [];
+      let lastRecordingBlob = null;
+      let recordingStartedAt = 0;
+      let isRecording = false;
+      let pendingStopModal = false;
+      let finalVideoName = '';
+      let objectUrlForDownload = null;
+
+      const defaults = {
+        speed: NATURAL_SPEED,
+        fontSize: 38,
+        width: 72,
+        position: 30,
+        highlight: '#f4d06f',
+        mirror: false,
+        quality: '720'
+      };
+
+      function showToast(message, duration = 3000) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove('show'), duration);
+      }
+
+      function safeReadStorage(key) {
+        try { return localStorage.getItem(key); }
+        catch (error) { console.warn('Não foi possível ler o armazenamento local:', error); return null; }
+      }
+
+      function safeWriteStorage(key, value) {
+        try { localStorage.setItem(key, value); return true; }
+        catch (error) {
+          console.warn('Não foi possível salvar no armazenamento local:', error);
+          $('saveStatus').textContent = 'Não foi possível salvar';
+          return false;
+        }
+      }
+
+      function getWordCount(text) {
+        const normalized = text.trim();
+        return normalized ? normalized.split(/\s+/u).filter(Boolean).length : 0;
+      }
+
+      function formatClock(milliseconds) {
+        const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const hours = Math.floor(minutes / 60);
+        const mm = String(minutes % 60).padStart(2, '0');
+        const ss = String(seconds).padStart(2, '0');
+        return hours ? `${String(hours).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
+      }
+
+      function updateStats() {
+        const value = editor.value;
+        const words = getWordCount(value);
+        const minutes = words / SPEECH_WPM;
+        $('charCount').textContent = value.length.toLocaleString('pt-BR');
+        $('wordCount').textContent = words.toLocaleString('pt-BR');
+        $('durationEstimate').textContent = formatClock(minutes * 60000);
+        stage.classList.toggle('has-script', value.trim().length > 0);
+      }
+
+      function appendFormattedSelection(wrapper) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        if (start === end) {
+          showToast('Selecione uma palavra ou expressão para formatar.');
+          editor.focus();
+          return;
+        }
+        const selected = editor.value.slice(start, end);
+        editor.setRangeText(`${wrapper}${selected}${wrapper}`, start, end, 'select');
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.focus();
+      }
+
+      function insertAtCursor(text) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const prefix = start > 0 && editor.value[start - 1] !== '\n' ? '\n' : '';
+        const suffix = end < editor.value.length && editor.value[end] !== '\n' ? '\n' : '';
+        const insertion = `${prefix}${text}${suffix}`;
+        editor.setRangeText(insertion, start, end, 'end');
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.focus();
+      }
+
+      function appendRichLine(parent, line) {
+        const paragraph = document.createElement('p');
+        if (!line) {
+          paragraph.textContent = ' ';
+          parent.appendChild(paragraph);
+          return;
+        }
+        const tokenPattern = /(\*\*([\s\S]+?)\*\*|==([\s\S]+?)==|\[PAUSA(?:\s+(\d+)s)?\])/g;
+        let cursor = 0;
+        let match;
+        while ((match = tokenPattern.exec(line)) !== null) {
+          if (match.index > cursor) paragraph.appendChild(document.createTextNode(line.slice(cursor, match.index)));
+          if (match[2] !== undefined) {
+            const strong = document.createElement('strong');
+            strong.textContent = match[2];
+            paragraph.appendChild(strong);
+          } else if (match[3] !== undefined) {
+            const mark = document.createElement('mark');
+            mark.textContent = match[3];
+            paragraph.appendChild(mark);
+          } else {
+            const pause = document.createElement('span');
+            pause.className = 'pause-marker';
+            const pauseSeconds = Number(match[4] || '2');
+            pause.dataset.seconds = String(pauseSeconds);
+            pause.textContent = `Pausa ${pauseSeconds}s`;
+            pause.setAttribute('aria-label', `Pausa automática de ${pauseSeconds} segundos`);
+            paragraph.appendChild(pause);
+          }
+          cursor = tokenPattern.lastIndex;
+        }
+        if (cursor < line.length) paragraph.appendChild(document.createTextNode(line.slice(cursor)));
+        parent.appendChild(paragraph);
+      }
+
+      function renderScript() {
+        const text = editor.value;
+        triggeredPauseMarkers = new WeakSet();
+        const fragment = document.createDocumentFragment();
+        const lines = text.replace(/\r\n?/g, '\n').split('\n');
+        lines.forEach((line) => appendRichLine(fragment, line));
+        scriptContent.replaceChildren(fragment);
+        updateStats();
+      }
+
+      function updateReadPosition() {
+        const offset = Math.round(stage.clientHeight * Number($('positionRange').value) / 100);
+        stage.style.setProperty('--read-offset', `${offset}px`);
+        stage.style.setProperty('--column-width', `${$('widthRange').value}%`);
+        scriptContent.style.setProperty('--column-width', `${$('widthRange').value}%`);
+      }
+
+      function applySettings(settings) {
+        const merged = { ...defaults, ...(settings || {}) };
+        $('speedRange').value = merged.speed;
+        $('fontRange').value = merged.fontSize;
+        $('widthRange').value = merged.width;
+        $('positionRange').value = merged.position;
+        $('highlightColor').value = merged.highlight;
+        $('mirrorToggle').checked = Boolean(merged.mirror);
+        $('qualitySelect').value = merged.quality === '1080' ? '1080' : '720';
+        updateControlLabels();
+      }
+
+      function readSettings() {
+        return {
+          speed: Number($('speedRange').value),
+          fontSize: Number($('fontRange').value),
+          width: Number($('widthRange').value),
+          position: Number($('positionRange').value),
+          highlight: $('highlightColor').value,
+          mirror: $('mirrorToggle').checked,
+          quality: $('qualitySelect').value
+        };
+      }
+
+      function persistSettings() {
+        safeWriteStorage(SETTINGS_KEY, JSON.stringify(readSettings()));
+      }
+
+      function updateControlLabels() {
+        const speed = Number($('speedRange').value);
+        const font = Number($('fontRange').value);
+        const width = Number($('widthRange').value);
+        const position = Number($('positionRange').value);
+        $('speedValue').textContent = `${speed} px/s`;
+        $('fontValue').textContent = `${font} px`;
+        $('widthValue').textContent = `${width}%`;
+        $('positionValue').textContent = `${position}%`;
+        scriptContent.style.setProperty('--font-size', `${font}px`);
+        scriptContent.style.setProperty('--read-highlight', $('highlightColor').value);
+        stage.classList.toggle('is-mirrored', $('mirrorToggle').checked);
+        updateReadPosition();
+      }
+
+      function scheduleAutoSave() {
+        $('saveStatus').textContent = 'Salvando…';
+        window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(() => {
+          const ok = safeWriteStorage(STORAGE_KEY, editor.value);
+          $('saveStatus').textContent = ok ? 'Salvo neste dispositivo' : 'Falha ao salvar';
+        }, 380);
+      }
+
+      function updateTimer() {
+        const total = elapsedMs + (isPlaying ? performance.now() - runStartedAt : 0);
+        $('elapsedTimer').textContent = formatClock(total);
+      }
+
+      function setTransportState() {
+        const icon = $('startPauseIcon');
+        const label = $('startPauseLabel');
+        if (isPlaying) {
+          icon.innerHTML = '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+          label.textContent = 'Pausar';
+        } else {
+          icon.innerHTML = '<path d="M8 5.8c0-.8.9-1.3 1.6-.9l9.1 5.2a1 1 0 0 1 0 1.8l-9.1 5.2c-.7.4-1.6-.1-1.6-.9z"/>';
+          label.textContent = viewport.scrollTop > 0 ? 'Retomar leitura' : 'Iniciar leitura';
+        }
+      }
+
+      function pauseReading() {
+        if (!isPlaying) return;
+        isPlaying = false;
+        elapsedMs += performance.now() - runStartedAt;
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+        lastFrameTime = 0;
+        setTransportState();
+        updateTimer();
+      }
+
+      function animationTick(timestamp) {
+        if (!isPlaying) return;
+        if (!lastFrameTime) lastFrameTime = timestamp;
+        const delta = Math.min(50, timestamp - lastFrameTime);
+        lastFrameTime = timestamp;
+
+        if (timestamp - lastTimerPaint > 200) {
+          updateTimer();
+          lastTimerPaint = timestamp;
+        }
+
+        // Durante uma pausa marcada, o cronômetro segue contando, mas o texto fica parado.
+        if (automaticPauseUntil && timestamp < automaticPauseUntil) {
+          animationFrame = requestAnimationFrame(animationTick);
+          return;
+        }
+        automaticPauseUntil = 0;
+
+        // Ao cruzar um marcador [PAUSA Ns] com a linha-guia, interrompe a rolagem pelo tempo indicado.
+        const stageRect = stage.getBoundingClientRect();
+        const readLineY = stageRect.top + stage.clientHeight * Number($('positionRange').value) / 100;
+        const markers = scriptContent.querySelectorAll('.pause-marker');
+        for (const marker of markers) {
+          if (triggeredPauseMarkers.has(marker)) continue;
+          const markerRect = marker.getBoundingClientRect();
+          if (markerRect.top <= readLineY + 1 && markerRect.bottom >= readLineY - 1) {
+            triggeredPauseMarkers.add(marker);
+            const pauseSeconds = Math.max(1, Math.min(30, Number(marker.dataset.seconds) || 2));
+            automaticPauseUntil = timestamp + pauseSeconds * 1000;
+            showToast(`Pausa natural de ${pauseSeconds} segundo${pauseSeconds === 1 ? '' : 's'}.`, Math.min(2600, pauseSeconds * 1000));
+            animationFrame = requestAnimationFrame(animationTick);
+            return;
+          }
+        }
+
+        const speed = Number($('speedRange').value);
+        viewport.scrollTop += speed * (delta / 1000);
+        const reachedEnd = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 2;
+        if (reachedEnd) {
+          pauseReading();
+          showToast('Fim do roteiro. Use Reiniciar para começar novamente.');
+          return;
+        }
+        animationFrame = requestAnimationFrame(animationTick);
+      }
+
+      function startReading() {
+        if (!editor.value.trim()) {
+          showToast('Escreva ou carregue um roteiro antes de iniciar.');
+          editor.focus();
+          return;
+        }
+        if (isPlaying) return;
+        // Quando o texto já chegou ao fim, um novo início volta ao topo.
+        if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 2) viewport.scrollTop = 0;
+        isPlaying = true;
+        runStartedAt = performance.now();
+        lastFrameTime = 0;
+        lastTimerPaint = 0;
+        setTransportState();
+        animationFrame = requestAnimationFrame(animationTick);
+      }
+
+      function toggleReading() {
+        if (isPlaying) pauseReading();
+        else startReading();
+      }
+
+      function restartReading() {
+        pauseReading();
+        elapsedMs = 0;
+        automaticPauseUntil = 0;
+        triggeredPauseMarkers = new WeakSet();
+        viewport.scrollTop = 0;
+        updateTimer();
+        setTransportState();
+        showToast('Leitura reiniciada do começo.');
+      }
+
+      function getSupportedMimeType() {
+        if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+        const types = [
+          'video/webm;codecs=vp9,opus',
+          'video/webm;codecs=vp8,opus',
+          'video/webm',
+          'video/mp4;codecs=h264,aac',
+          'video/mp4'
+        ];
+        return types.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+      }
+
+      function stopCameraStream() {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach((track) => track.stop());
+          mediaStream = null;
+        }
+        cameraVideo.srcObject = null;
+        stage.classList.remove('has-camera');
+        $('cameraHint').style.display = 'flex';
+        $('cameraBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg> Ativar câmera';
+      }
+
+      async function activateCamera() {
+        if (mediaStream) {
+          if (isRecording) {
+            showToast('Pare a gravação antes de desligar a câmera.');
+            return;
+          }
+          stopCameraStream();
+          showToast('Câmera desativada. O teleprompter continua disponível.');
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('Este navegador não liberou acesso à câmera. Abra o app em HTTPS ou use outro navegador.', 4800);
+          return;
+        }
+        const height = $('qualitySelect').value === '1080' ? 1080 : 720;
+        const width = $('qualitySelect').value === '1080' ? 1920 : 1280;
+        const constraints = {
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          video: { facingMode: { ideal: 'user' }, width: { ideal: width }, height: { ideal: height }, frameRate: { ideal: 30, max: 30 } }
+        };
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (firstError) {
+          // Alguns celulares não aceitam a combinação ideal de resolução/áudio. Tenta o padrão do dispositivo.
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { facingMode: 'user' } });
+          } catch (secondError) {
+            const message = secondError && secondError.name === 'NotAllowedError'
+              ? 'Permissão de câmera/microfone negada. Libere o acesso nas configurações do navegador.'
+              : secondError && secondError.name === 'NotFoundError'
+                ? 'Não foi encontrada uma câmera ou entrada de áudio disponível.'
+                : 'Não foi possível ativar a câmera. Confira as permissões e tente novamente.';
+            showToast(message, 5200);
+            console.warn('Falha ao abrir câmera:', firstError, secondError);
+            return;
+          }
+        }
+        cameraVideo.srcObject = mediaStream;
+        stage.classList.add('has-camera');
+        $('cameraHint').style.display = 'none';
+        $('cameraBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><path d="m17 10 5-3v10l-5-3"/></svg> Desativar câmera';
+        try { await cameraVideo.play(); } catch (error) { console.warn('Prévia da câmera aguardando interação:', error); }
+        showToast('Câmera ativada. A prévia não é gravada até você iniciar a gravação.');
+      }
+
+      async function startRecording() {
+        if (isRecording) return;
+        if (!window.MediaRecorder) {
+          showToast('A gravação não é compatível com este navegador. Você ainda pode usar o teleprompter normalmente.', 5000);
+          return;
+        }
+        if (!mediaStream) {
+          await activateCamera();
+          if (!mediaStream) return;
+        }
+        try {
+          const mimeType = getSupportedMimeType();
+          const options = { videoBitsPerSecond: $('qualitySelect').value === '1080' ? 4500000 : 2500000, audioBitsPerSecond: 128000 };
+          if (mimeType) options.mimeType = mimeType;
+          mediaRecorder = new MediaRecorder(mediaStream, options);
+          recordedChunks = [];
+          lastRecordingBlob = null;
+          finalVideoName = '';
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+          };
+          mediaRecorder.onerror = (event) => {
+            console.error('Erro na gravação:', event.error || event);
+            showToast('O navegador encontrou um erro durante a gravação.', 4500);
+          };
+          mediaRecorder.onstop = () => {
+            const type = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : (recordedChunks[0] && recordedChunks[0].type) || 'video/webm';
+            lastRecordingBlob = new Blob(recordedChunks, { type });
+            const extension = type.includes('mp4') ? 'mp4' : 'webm';
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            finalVideoName = `teleprompter-natural-${stamp}.${extension}`;
+            isRecording = false;
+            $('recordingBadge').classList.remove('active');
+            $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg> Gravar vídeo';
+            stopCameraStream();
+            $('cameraNote').textContent = lastRecordingBlob.size ? `Gravação pronta · ${(lastRecordingBlob.size / (1024 * 1024)).toFixed(1).replace('.', ',')} MB` : 'Gravação finalizada sem dados de vídeo.';
+            if (pendingStopModal) {
+              pendingStopModal = false;
+              showStopModal();
+            }
+          };
+          mediaRecorder.start(1000);
+          isRecording = true;
+          recordingStartedAt = Date.now();
+          $('recordingBadge').classList.add('active');
+          $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Gravando…';
+          $('cameraNote').textContent = 'Gravando vídeo e áudio. Pressione STOP para finalizar e escolher o que fazer.';
+          if (!isPlaying) startReading();
+          showToast('Gravação iniciada. A rolagem acompanha a leitura.');
+        } catch (error) {
+          console.error('Não foi possível iniciar a gravação:', error);
+          showToast('Não foi possível iniciar a gravação neste formato. Tente novamente ou use apenas o teleprompter.', 5000);
+          isRecording = false;
+        }
+      }
+
+      function showStopModal() {
+        const hasVideo = Boolean(lastRecordingBlob && lastRecordingBlob.size > 0);
+        $('stopModalDescription').textContent = hasVideo
+          ? `Vídeo pronto para salvar ou compartilhar (${(lastRecordingBlob.size / (1024 * 1024)).toFixed(1).replace('.', ',')} MB). O roteiro continua salvo no editor.`
+          : 'A leitura foi interrompida. Seu roteiro permanece no editor e a posição atual foi mantida.';
+        $('saveOutputTitle').textContent = hasVideo ? 'Salvar vídeo no dispositivo' : 'Salvar roteiro no dispositivo';
+        $('saveOutputSubtitle').textContent = hasVideo ? 'Baixar a gravação finalizada' : 'Exportar o roteiro como arquivo .txt';
+        stopModal.classList.add('show');
+        $('returnOutputBtn').focus();
+      }
+
+      function stopEverything() {
+        pauseReading();
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          pendingStopModal = true;
+          try { mediaRecorder.stop(); }
+          catch (error) { console.error('Erro ao finalizar gravação:', error); pendingStopModal = false; showStopModal(); }
+          return;
+        }
+        if (mediaStream && !isRecording) stopCameraStream();
+        showStopModal();
+      }
+
+      function downloadBlob(blob, filename) {
+        if (!blob || !blob.size) {
+          showToast('Não há arquivo de vídeo disponível para salvar.');
+          return;
+        }
+        if (objectUrlForDownload) URL.revokeObjectURL(objectUrlForDownload);
+        objectUrlForDownload = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrlForDownload;
+        anchor.download = filename;
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => {
+          if (objectUrlForDownload) {
+            URL.revokeObjectURL(objectUrlForDownload);
+            objectUrlForDownload = null;
+          }
+        }, 30000);
+        showToast('Arquivo enviado para os downloads do dispositivo.');
+      }
+
+      function exportScript() {
+        const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
+        const date = new Date().toISOString().slice(0, 10);
+        downloadBlob(blob, `roteiro-teleprompter-${date}.txt`);
+      }
+
+      async function shareOutput() {
+        const hasVideo = Boolean(lastRecordingBlob && lastRecordingBlob.size > 0);
+        if (hasVideo && navigator.share && navigator.canShare) {
+          try {
+            const file = new File([lastRecordingBlob], finalVideoName || 'gravacao-teleprompter.webm', { type: lastRecordingBlob.type || 'video/webm' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: 'Gravação — Teleprompter Natural', text: 'Vídeo gravado com o Teleprompter Natural.' });
+              stopModal.classList.remove('show');
+              return;
+            }
+          } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            console.warn('Compartilhamento nativo indisponível:', error);
+          }
+          downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+          stopModal.classList.remove('show');
+          showToast('O compartilhamento de arquivos não está disponível aqui. O vídeo foi baixado para você anexar.');
+          return;
+        }
+        if (!hasVideo && navigator.share) {
+          try {
+            await navigator.share({ title: 'Roteiro — Teleprompter Natural', text: editor.value });
+            stopModal.classList.remove('show');
+            return;
+          } catch (error) {
+            if (error && error.name === 'AbortError') return;
+          }
+        }
+        if (hasVideo) {
+          downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+          showToast('Compartilhamento indisponível neste navegador. Vídeo baixado; anexe-o no aplicativo desejado.');
+        } else {
+          try {
+            await navigator.clipboard.writeText(editor.value);
+            showToast('Roteiro copiado. Cole-o no aplicativo em que deseja compartilhar.');
+          } catch (error) {
+            exportScript();
+            showToast('Roteiro exportado como arquivo de texto.');
+          }
+        }
+        stopModal.classList.remove('show');
+      }
+
+      async function pasteFromClipboard() {
+        try {
+          if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('Clipboard API indisponível');
+          const text = await navigator.clipboard.readText();
+          if (!text) { showToast('A área de transferência está vazia.'); return; }
+          const start = editor.selectionStart;
+          const end = editor.selectionEnd;
+          editor.setRangeText(text, start, end, 'end');
+          editor.dispatchEvent(new Event('input', { bubbles: true }));
+          editor.focus();
+          showToast('Texto colado no roteiro.');
+        } catch (error) {
+          showToast('Não foi possível acessar a área de transferência. Use Ctrl+V ou toque e segure para colar.', 4300);
+          editor.focus();
+        }
+      }
+
+      function openFullscreen() {
+        const target = document.documentElement;
+        if (!document.fullscreenElement && target.requestFullscreen) {
+          target.requestFullscreen().catch(() => showToast('O modo de tela cheia não está disponível neste navegador.'));
+        } else if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      // Eventos do editor e dos controles.
+      editor.addEventListener('input', () => {
+        renderScript();
+        scheduleAutoSave();
+      });
+      editor.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'b') {
+          event.preventDefault();
+          appendFormattedSelection('**');
+        }
+      });
+      $('boldBtn').addEventListener('click', () => appendFormattedSelection('**'));
+      $('highlightBtn').addEventListener('click', () => appendFormattedSelection('=='));
+      $('pauseBtn').addEventListener('click', () => insertAtCursor('[PAUSA 2s]'));
+      $('clearBtn').addEventListener('click', () => {
+        if (!editor.value) return;
+        editor.value = '';
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.focus();
+        showToast('Roteiro limpo.');
+      });
+      $('pasteBtn').addEventListener('click', pasteFromClipboard);
+      $('loadFileBtn').addEventListener('click', () => $('fileInput').click());
+      $('fileInput').addEventListener('change', async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          editor.value = text;
+          editor.dispatchEvent(new Event('input', { bubbles: true }));
+          showToast(`Roteiro carregado: ${file.name}`);
+        } catch (error) {
+          showToast('Não foi possível ler esse arquivo de texto.');
+        }
+        event.target.value = '';
+      });
+
+      ['speedRange', 'fontRange', 'widthRange', 'positionRange', 'highlightColor', 'mirrorToggle', 'qualitySelect'].forEach((id) => {
+        $(id).addEventListener('input', () => { updateControlLabels(); persistSettings(); });
+        $(id).addEventListener('change', () => { updateControlLabels(); persistSettings(); });
+      });
+      $('speedDown').addEventListener('click', () => {
+        $('speedRange').value = Math.max(Number($('speedRange').min), Number($('speedRange').value) - 2);
+        updateControlLabels(); persistSettings();
+      });
+      $('speedUp').addEventListener('click', () => {
+        $('speedRange').value = Math.min(Number($('speedRange').max), Number($('speedRange').value) + 2);
+        updateControlLabels(); persistSettings();
+      });
+      $('startPauseBtn').addEventListener('click', toggleReading);
+      $('restartBtn').addEventListener('click', restartReading);
+      $('stopBtn').addEventListener('click', stopEverything);
+      $('cameraBtn').addEventListener('click', activateCamera);
+      $('recordBtn').addEventListener('click', startRecording);
+      $('fullscreenBtn').addEventListener('click', openFullscreen);
+      $('saveOutputBtn').addEventListener('click', () => {
+        if (lastRecordingBlob && lastRecordingBlob.size) downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+        else exportScript();
+      });
+      $('returnOutputBtn').addEventListener('click', () => {
+        stopModal.classList.remove('show');
+        showToast('Posição mantida. Pressione Retomar leitura quando estiver pronto.');
+      });
+      $('shareOutputBtn').addEventListener('click', shareOutput);
+      $('closeModalBtn').addEventListener('click', () => stopModal.classList.remove('show'));
+      stopModal.addEventListener('click', (event) => {
+        if (event.target === stopModal) stopModal.classList.remove('show');
+      });
+      document.addEventListener('keydown', (event) => {
+        if (stopModal.classList.contains('show')) {
+          if (event.key === 'Escape') stopModal.classList.remove('show');
+          return;
+        }
+        const target = event.target;
+        const isTyping = target && (target.matches('textarea, input, select') || target.isContentEditable);
+        const isActionControl = target && target.closest('button, a, [role="button"]');
+        if (isTyping || isActionControl || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.code === 'Space') {
+          event.preventDefault();
+          toggleReading();
+        } else if (event.key.toLowerCase() === 'r') {
+          restartReading();
+        } else if (event.key.toLowerCase() === 'f') {
+          openFullscreen();
+        }
+      });
+      window.addEventListener('resize', updateReadPosition);
+      window.addEventListener('beforeunload', () => {
+        if (mediaStream) mediaStream.getTracks().forEach((track) => track.stop());
+        if (objectUrlForDownload) URL.revokeObjectURL(objectUrlForDownload);
+      });
+
+      // Restaura roteiro e preferências na inicialização.
+      const savedScript = safeReadStorage(STORAGE_KEY);
+      if (savedScript !== null) editor.value = savedScript;
+      let savedSettings = null;
+      try { savedSettings = JSON.parse(safeReadStorage(SETTINGS_KEY) || 'null'); }
+      catch (error) { console.warn('Preferências salvas inválidas:', error); }
+      applySettings(savedSettings);
+      renderScript();
+      updateReadPosition();
+      updateTimer();
+      setTransportState();
+      $('saveStatus').textContent = savedScript !== null ? 'Rascunho recuperado' : 'Salvo neste dispositivo';
+
+      // Em navegadores móveis, ao rotacionar a tela a faixa permanece na proporção configurada.
+      if ('ResizeObserver' in window) {
+        const observer = new ResizeObserver(updateReadPosition);
+        observer.observe(stage);
+      }
+    })();
+  </script>
+</body>
+</html>
