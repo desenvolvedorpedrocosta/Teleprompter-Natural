@@ -398,6 +398,118 @@
       .review-actions .primary-btn, .review-actions .secondary-btn, .review-actions .danger-btn { min-height: 39px; font-size: 11px; }
     }
 
+    /* Correções finais mobile: largura contida, splash estável e STOP sempre acessível. */
+    @media (max-width: 820px) {
+      html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+      body { min-width: 0; }
+      .app-shell {
+        width: 100%; max-width: 100%; min-width: 0; margin: 0; box-sizing: border-box;
+        padding-left: max(8px, env(safe-area-inset-left, 0px));
+        padding-right: max(8px, env(safe-area-inset-right, 0px));
+        overflow-x: clip;
+      }
+      .topbar, .brand, .brand-copy, .top-actions, .workspace, .panel, .panel-heading,
+      .stage-panel, .editor-panel, .control-deck, .transport-row, .transport-actions,
+      .workflow-actions, .reading-action-group, .capture-action-group, .capture-buttons,
+      .utility-actions, .timer-box, .adjustments, .setting, .setting-head, .editor-footer,
+      .stats, .footnote { min-width: 0; max-width: 100%; }
+      .topbar { flex-wrap: wrap; }
+      .brand { flex: 1 1 210px; }
+      .brand-copy { flex: 1 1 auto; overflow-wrap: anywhere; }
+      .top-actions { flex: 0 0 auto; margin-left: auto; }
+      .workspace, .panel, .stage-panel, .editor-panel { width: 100%; }
+      .panel-heading { flex-wrap: wrap; }
+      .control-deck { width: auto; }
+      .transport-row { width: 100%; }
+      .workflow-actions { width: 100%; flex: 1 1 100%; }
+      .reading-action-group { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+      .reading-action-group .action-caption { flex: 1 1 145px; min-width: 0; }
+      .capture-action-group { width: 100%; min-width: 0; flex: 1 1 auto; }
+      .capture-buttons { width: 100%; min-width: 0; }
+      .capture-buttons > button { min-width: 0; max-width: 100%; white-space: normal; }
+      .action-caption, .camera-note { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+      .utility-actions { width: 100%; flex-wrap: wrap; }
+      .timer-box { min-width: 0; }
+      body.recording-active .timer-box {
+        width: 100%; align-self: stretch; padding-right: 112px; text-align: left;
+      }
+      .adjustments { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .setting-head { flex-wrap: wrap; }
+      .setting input[type="range"], input[type="range"] { min-width: 0; max-width: 100%; }
+      .editor-tools, .editor-footer, .stats, .footnote { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+      .footnote { overflow-wrap: anywhere; }
+      #stopBtn { touch-action: manipulation; }
+
+      /* A animação mobile usa apenas composição (transform/opacity), sem box-shadow animado. */
+      .splash-content {
+        transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
+        will-change: transform, opacity; animation: splash-mobile-entry .62s ease both;
+      }
+      .splash-logo {
+        transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
+        transform-style: preserve-3d; will-change: transform, opacity;
+        animation: splash-mobile-float 1.8s ease-in-out infinite;
+      }
+      @keyframes splash-mobile-entry {
+        from { opacity: 0; transform: translate3d(0, 9px, 0); }
+        to { opacity: 1; transform: translate3d(0, 0, 0); }
+      }
+      @keyframes splash-mobile-float {
+        0%, 100% { opacity: 1; transform: translate3d(0, 0, 0); }
+        50% { opacity: .94; transform: translate3d(0, 0, 0); }
+      }
+    }
+    @media (max-width: 520px) {
+      .app-shell { padding-top: 7px; padding-bottom: 10px; }
+      .topbar { gap: 7px; }
+      .brand { flex-basis: 190px; gap: 8px; }
+      .brand-copy p { max-width: 100%; overflow-wrap: anywhere; }
+      .top-actions { gap: 6px; }
+      .workspace { gap: 8px; }
+      .stage { width: auto; min-width: 0; margin: 6px; }
+      .control-deck { width: auto; min-width: 0; margin: 0 6px 6px; padding: 8px; }
+      .transport-row { gap: 6px; }
+      .workflow-actions { gap: 7px; }
+      .reading-action-group { gap: 5px 7px; }
+      .reading-action-group .action-caption { flex: 1 1 130px; font-size: 9px; }
+      .capture-action-group { gap: 4px; }
+      .capture-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+      .capture-buttons .secondary-btn { width: 100%; padding-inline: 6px; font-size: 10px; line-height: 1.2; }
+      .utility-actions { justify-content: flex-end; gap: 6px; }
+      .timer-box { width: 100%; justify-content: space-between; }
+      .adjustments { gap: 7px 8px; }
+      .setting-head { gap: 4px; }
+      .setting-head > label { overflow-wrap: anywhere; }
+      .stats { gap: 6px; }
+      .footnote { margin-inline: 0; }
+    }
+
+    /* O botão existente passa a flutuar sobre a interface durante toda a gravação. */
+    body.recording-active #stopBtn {
+      position: fixed !important;
+      right: max(16px, env(safe-area-inset-right, 0px));
+      bottom: max(16px, env(safe-area-inset-bottom, 0px));
+      z-index: 10010;
+      min-width: 92px; min-height: 54px; padding: 0 18px;
+      border: 1px solid rgba(255, 150, 150, .8);
+      border-radius: 14px;
+      color: #fff;
+      background: linear-gradient(145deg, #c43d42, #8f2028);
+      box-shadow: 0 0 0 4px rgba(250, 80, 80, .18), 0 12px 32px rgba(0, 0, 0, .48);
+      font-size: 14px; font-weight: 900; letter-spacing: .08em;
+      opacity: 1; visibility: visible; transform: translateZ(0);
+      pointer-events: auto;
+    }
+    body.recording-active #stopBtn:hover { filter: brightness(1.12); }
+    @media (max-width: 520px) {
+      body.recording-active #stopBtn {
+        right: max(12px, env(safe-area-inset-right, 0px));
+        bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        min-width: 88px; min-height: 52px; padding: 0 16px;
+        border-radius: 13px; font-size: 13px;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
@@ -1200,6 +1312,7 @@
             const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             finalVideoName = `teleprompter-natural-${stamp}.${extension}`;
             isRecording = false;
+            document.body.classList.remove('recording-active');
             $('recordingBadge').classList.remove('active');
             $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg> Gravar vídeo';
             stopCameraStream();
@@ -1213,6 +1326,7 @@
           };
           mediaRecorder.start(1000);
           isRecording = true;
+          document.body.classList.add('recording-active');
           recordingStartedAt = Date.now();
           $('recordingBadge').classList.add('active');
           $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Gravando vídeo…';
@@ -1223,6 +1337,7 @@
           console.error('Não foi possível iniciar a gravação:', error);
           showToast('Não foi possível iniciar a gravação neste formato. Tente novamente ou use apenas o teleprompter.', 5000);
           isRecording = false;
+          document.body.classList.remove('recording-active');
         }
       }
 
