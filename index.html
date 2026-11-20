@@ -639,7 +639,7 @@
       <p class="auth-intro">Acesso por PIN temporário. Digite o código fornecido pelo administrador para liberar o aplicativo neste dispositivo.</p>
       <form class="auth-form" id="pinLoginForm">
         <label for="pinInput">Seu PIN de acesso</label>
-        <input class="auth-pin-input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" placeholder="••••••••" aria-label="PIN de oito dígitos" required>
+        <input class="auth-pin-input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" aria-label="PIN de quatro dígitos" required>
         <button class="auth-submit" id="pinLoginBtn" type="submit">Validar PIN e entrar</button>
       </form>
       <p class="auth-message" id="authMessage" role="status" aria-live="polite">O período padrão de acesso é de 15 dias a partir da criação do PIN.</p>
@@ -660,8 +660,8 @@
         <button class="admin-close" id="adminCloseBtn" type="button" aria-label="Fechar administração">×</button>
       </div>
       <div id="adminAuthPanel" class="admin-auth-area">
-        <label for="adminSecretInput">Chave administrativa</label>
-        <input class="admin-secret-input" id="adminSecretInput" type="password" autocomplete="current-password" placeholder="Digite a chave do administrador">
+        <label for="adminSecretInput">PIN administrativo (aba CONFIG)</label>
+        <input class="admin-secret-input" id="adminSecretInput" type="password" autocomplete="current-password" placeholder="Digite o PIN/chave do administrador">
         <button class="auth-submit" id="adminAuthenticateBtn" type="button">Acessar administração</button>
       </div>
       <div id="adminDashboard" hidden>
@@ -670,7 +670,7 @@
           <button class="admin-btn" id="saveDefaultDaysBtn" type="button">Salvar prazo</button>
           <button class="admin-btn" id="generatePinBtn" type="button">+ Gerar novo PIN</button>
         </div>
-        <div class="admin-generated" id="adminGeneratedPin" hidden><small>Novo PIN — copie agora; por segurança ele não será exibido novamente.</small><strong id="adminGeneratedPinValue"></strong><button class="admin-btn" id="copyGeneratedPinBtn" type="button">Copiar PIN</button><small id="adminGeneratedPinExpiry"></small></div>
+        <div class="admin-generated" id="adminGeneratedPin" hidden><small>Novo PIN — também fica salvo na coluna PIN da aba PINS e pode ser consultado ou editado na planilha.</small><strong id="adminGeneratedPinValue"></strong><button class="admin-btn" id="copyGeneratedPinBtn" type="button">Copiar PIN</button><small id="adminGeneratedPinExpiry"></small></div>
         <div class="admin-actions"><h3>PINs cadastrados</h3><button class="admin-btn" id="refreshPinsBtn" type="button">Atualizar lista</button></div>
         <div class="admin-pin-list" id="adminPinList"></div>
       </div>
@@ -908,7 +908,7 @@
       // Cole aqui a URL /exec do Web App publicado no Google Apps Script.
       // O PIN e a chave administrativa são enviados somente no corpo HTTPS POST, nunca na URL.
       const ACCESS_API_CONFIG = {
-        endpoint: 'https://script.google.com/macros/s/AKfycbwPUdEW9SA0sNm8Dttg8EGbJyqqNOonsJDJTUmkqHjktKpYnUjs-4I8Ec24_7NScE5BFg/exec',
+        endpoint: 'COLE_AQUI_A_URL_EXEC_DO_APPS_SCRIPT',
         timeoutMs: 15000,
         resultTimeoutMs: 15000
       };
@@ -1128,7 +1128,7 @@
           return;
         }
         if (!savedToken) {
-          setAuthMessage('Digite o PIN de oito dígitos fornecido pelo administrador. O prazo padrão é de 15 dias.');
+          setAuthMessage('Digite o PIN de 4 dígitos fornecido pelo administrador. O prazo padrão é de 15 dias.');
           return;
         }
         setAuthMessage('Revalidando sua sessão com o servidor…');
@@ -1152,8 +1152,8 @@
       async function submitPinLogin(event) {
         event.preventDefault();
         const pin = $('pinInput').value.replace(/\D/g, '');
-        if (!/^\d{8}$/.test(pin)) {
-          setAuthMessage('O PIN deve conter exatamente oito números.', 'error');
+        if (!/^\d{4}$/.test(pin)) {
+          setAuthMessage('O PIN deve conter exatamente 4 números.', 'error');
           return;
         }
         $('pinLoginBtn').disabled = true;
@@ -1271,7 +1271,7 @@
           const main = document.createElement('div');
           main.className = 'admin-pin-main';
           const title = document.createElement('strong');
-          title.textContent = `PIN ${String(pin.pinId || '').slice(0, 8).toUpperCase()} · ${Number(pin.accessCount || 0)} acesso(s)`;
+          title.textContent = `PIN ${pin.pin || '—'} · ${Number(pin.accessCount || 0)} acesso(s)`;
           const details = document.createElement('small');
           details.textContent = `Criado: ${formatAdminDate(pin.createdAt)} · Expira: ${formatAdminDate(pin.expiresAt)} · Último acesso: ${formatAdminDate(pin.lastAccessAt)}`;
           const badge = document.createElement('span');
@@ -2428,6 +2428,9 @@
       $('cameraBtn').addEventListener('click', activateCamera);
       $('recordBtn').addEventListener('click', startRecording);
       $('fullscreenBtn').addEventListener('click', openFullscreen);
+      $('pinInput').addEventListener('input', () => {
+        $('pinInput').value = $('pinInput').value.replace(/\D/g, '').slice(0, 4);
+      });
       $('pinLoginForm').addEventListener('submit', submitPinLogin);
       $('logoutBtn').addEventListener('click', logoutAccess);
       $('authLogoTrigger').addEventListener('click', () => {
