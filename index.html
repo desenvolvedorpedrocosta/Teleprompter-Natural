@@ -241,6 +241,73 @@
       .stats { gap: 8px; font-size: 10px; }
       .footnote { flex-direction: column; gap: 3px; }
     }
+    /* Ajustes compactos de layout: preservam cores, textos e componentes. */
+    .app-shell { padding: 16px clamp(12px, 1.8vw, 25px) 20px; }
+    .topbar { margin-bottom: 13px; gap: 12px; }
+    .workspace { gap: 12px; }
+    .panel-heading { padding: 15px 17px 11px; }
+    .editor-tools { gap: 6px; padding: 10px 15px 7px; }
+    .editor-wrap { padding: 0 15px 12px; }
+    #scriptEditor { min-height: 360px; max-height: 58vh; padding: 13px 14px 16px; }
+    .editor-footer { gap: 8px; padding: 0 16px 12px; }
+    .stage { min-height: 460px; height: min(62vh, 700px); margin: 12px; }
+    .control-deck { margin: 0 12px 12px; padding: 12px; }
+    .transport-row { gap: 8px; }
+    .primary-btn, .danger-btn { min-height: 37px; padding: 0 12px; }
+    .control-divider { margin: 10px 0; }
+    .adjustments { gap: 10px 13px; }
+    .camera-controls { margin-top: 10px; padding-top: 9px; gap: 8px; }
+
+    @media (max-width: 820px) {
+      .app-shell { padding: 10px 10px 16px; }
+      .topbar { margin-bottom: 9px; }
+      .workspace { gap: 9px; }
+      .panel-heading { padding: 12px 14px 10px; }
+      .stage { min-height: 340px; height: min(54vh, 490px); max-height: 490px; margin: 8px; }
+      .control-deck { margin: 0 8px 8px; padding: 9px; }
+      #scriptEditor { min-height: 230px; max-height: 44vh; }
+      .editor-tools { padding: 8px 12px 6px; }
+      .editor-wrap { padding: 0 12px 9px; }
+      .editor-footer { padding: 0 13px 10px; }
+      .adjustments { gap: 8px 11px; }
+      .camera-controls { margin-top: 8px; padding-top: 8px; }
+    }
+    @media (max-width: 520px) {
+      .app-shell { padding: 8px 8px 12px; }
+      .topbar { gap: 8px; margin-bottom: 8px; }
+      .brand { gap: 9px; }
+      .brand-mark { width: 38px; height: 38px; border-radius: 12px; }
+      .stage { min-height: 300px; height: min(52vh, 430px); max-height: 430px; margin: 7px; }
+      .control-deck { margin: 0 7px 7px; padding: 8px; }
+      .transport-row { align-items: center; gap: 7px; }
+      .transport-actions { gap: 5px; }
+      .primary-btn, .danger-btn { min-height: 35px; padding: 0 10px; font-size: 10px; }
+      .transport-actions .icon-btn { min-width: 35px; min-height: 35px; padding: 0 8px; }
+      .timer-box { min-width: 66px; }
+      .timer-box strong { font-size: 18px; }
+      .control-divider { margin: 8px 0; }
+      .adjustments { gap: 7px 9px; }
+      .setting-head { gap: 5px; margin-bottom: 5px; }
+      .setting label { font-size: 9px; }
+      .setting output { font-size: 9px; }
+      .step-btn { width: 20px; height: 20px; }
+      .camera-controls { gap: 7px; margin-top: 7px; padding-top: 7px; }
+      .camera-controls-left { gap: 6px; }
+      .camera-controls-left .secondary-btn { min-height: 32px; padding: 0 8px; font-size: 10px; }
+      .camera-note { font-size: 9px; }
+      #scriptEditor { min-height: 210px; max-height: 42vh; padding: 11px 12px 13px; }
+      .editor-tools { gap: 5px; padding: 7px 10px 5px; }
+      .tool-btn { min-height: 31px; padding: 0 8px; font-size: 9px; }
+      .editor-wrap { padding: 0 10px 8px; }
+      .editor-footer { padding: 0 11px 9px; }
+      .stats { gap: 7px; font-size: 9px; }
+      .footnote { padding-top: 5px; }
+    }
+    @media (max-width: 820px) and (orientation: landscape) {
+      .stage { min-height: 250px; height: 66vh; max-height: 430px; }
+      #scriptEditor { min-height: 170px; max-height: 42vh; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
@@ -443,6 +510,7 @@
       let isPlaying = false;
       let animationFrame = 0;
       let lastFrameTime = 0;
+      let fractionalScrollPixels = 0;
       let elapsedMs = 0;
       let runStartedAt = 0;
       let lastTimerPaint = 0;
@@ -676,7 +744,9 @@
       function animationTick(timestamp) {
         if (!isPlaying) return;
         if (!lastFrameTime) lastFrameTime = timestamp;
-        const delta = Math.min(50, timestamp - lastFrameTime);
+        // Usa o deltaTime real e acumula frações até completar pelo menos 1 px.
+        // Isso evita que velocidades como 28 px/s sejam arredondadas para zero.
+        const deltaTime = Math.max(0, timestamp - lastFrameTime) / 1000;
         lastFrameTime = timestamp;
 
         if (timestamp - lastTimerPaint > 200) {
@@ -709,7 +779,12 @@
         }
 
         const speed = Number($('speedRange').value);
-        viewport.scrollTop += speed * (delta / 1000);
+        fractionalScrollPixels += speed * deltaTime;
+        const wholePixels = Math.floor(fractionalScrollPixels);
+        if (wholePixels > 0) {
+          viewport.scrollTop += wholePixels;
+          fractionalScrollPixels -= wholePixels;
+        }
         const reachedEnd = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 2;
         if (reachedEnd) {
           pauseReading();
@@ -727,7 +802,10 @@
         }
         if (isPlaying) return;
         // Quando o texto já chegou ao fim, um novo início volta ao topo.
-        if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 2) viewport.scrollTop = 0;
+        if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 2) {
+          viewport.scrollTop = 0;
+          fractionalScrollPixels = 0;
+        }
         isPlaying = true;
         runStartedAt = performance.now();
         lastFrameTime = 0;
@@ -746,22 +824,66 @@
         elapsedMs = 0;
         automaticPauseUntil = 0;
         triggeredPauseMarkers = new WeakSet();
+        fractionalScrollPixels = 0;
         viewport.scrollTop = 0;
         updateTimer();
         setTransportState();
         showToast('Leitura reiniciada do começo.');
       }
 
-      function getSupportedMimeType() {
-        if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
-        const types = [
+      function getSupportedMimeTypes() {
+        if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return [];
+
+        // MP4 vem primeiro; alguns navegadores anunciam suporte, mas podem
+        // recusar a criação do gravador. startRecording também tenta os fallbacks.
+        const preferredTypes = [
+          'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+          'video/mp4;codecs=h264,aac',
+          'video/mp4;codecs=avc1',
+          'video/mp4',
           'video/webm;codecs=vp9,opus',
           'video/webm;codecs=vp8,opus',
-          'video/webm',
-          'video/mp4;codecs=h264,aac',
-          'video/mp4'
+          'video/webm'
         ];
-        return types.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+
+        return preferredTypes.filter((type) => {
+          try { return MediaRecorder.isTypeSupported(type); }
+          catch (error) { return false; }
+        });
+      }
+
+      function createMediaRecorder(stream, baseOptions) {
+        const supportedTypes = getSupportedMimeTypes();
+        let lastError = null;
+
+        for (const mimeType of supportedTypes) {
+          try {
+            return new MediaRecorder(stream, { ...baseOptions, mimeType });
+          } catch (error) {
+            lastError = error;
+            console.warn(`O navegador recusou ${mimeType}; tentando o próximo formato.`, error);
+          }
+        }
+
+        // Último recurso: deixa o navegador escolher o formato padrão.
+        try {
+          return new MediaRecorder(stream, baseOptions);
+        } catch (error) {
+          lastError = error;
+        }
+
+        // Alguns motores também podem rejeitar as opções de bitrate.
+        try {
+          return new MediaRecorder(stream);
+        } catch (error) {
+          throw lastError || error;
+        }
+      }
+
+      function getVideoFilename() {
+        if (finalVideoName) return finalVideoName;
+        const extension = lastRecordingBlob && /mp4/i.test(lastRecordingBlob.type) ? 'mp4' : 'webm';
+        return `gravacao-teleprompter.${extension}`;
       }
 
       function stopCameraStream() {
@@ -831,10 +953,8 @@
           if (!mediaStream) return;
         }
         try {
-          const mimeType = getSupportedMimeType();
           const options = { videoBitsPerSecond: $('qualitySelect').value === '1080' ? 4500000 : 2500000, audioBitsPerSecond: 128000 };
-          if (mimeType) options.mimeType = mimeType;
-          mediaRecorder = new MediaRecorder(mediaStream, options);
+          mediaRecorder = createMediaRecorder(mediaStream, options);
           recordedChunks = [];
           lastRecordingBlob = null;
           finalVideoName = '';
@@ -846,9 +966,12 @@
             showToast('O navegador encontrou um erro durante a gravação.', 4500);
           };
           mediaRecorder.onstop = () => {
-            const type = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : (recordedChunks[0] && recordedChunks[0].type) || 'video/webm';
+            const chunkType = recordedChunks.find((chunk) => chunk && chunk.type)?.type || '';
+            const recorderType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : '';
+            const detectedType = recorderType || chunkType || 'video/webm';
+            const type = /mp4/i.test(detectedType) ? 'video/mp4' : /webm/i.test(detectedType) ? 'video/webm' : detectedType;
             lastRecordingBlob = new Blob(recordedChunks, { type });
-            const extension = type.includes('mp4') ? 'mp4' : 'webm';
+            const extension = /mp4/i.test(type) ? 'mp4' : 'webm';
             const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             finalVideoName = `teleprompter-natural-${stamp}.${extension}`;
             isRecording = false;
@@ -932,7 +1055,7 @@
         const hasVideo = Boolean(lastRecordingBlob && lastRecordingBlob.size > 0);
         if (hasVideo && navigator.share && navigator.canShare) {
           try {
-            const file = new File([lastRecordingBlob], finalVideoName || 'gravacao-teleprompter.webm', { type: lastRecordingBlob.type || 'video/webm' });
+            const file = new File([lastRecordingBlob], getVideoFilename(), { type: lastRecordingBlob.type || 'video/webm' });
             if (navigator.canShare({ files: [file] })) {
               await navigator.share({ files: [file], title: 'Gravação — Teleprompter Natural', text: 'Vídeo gravado com o Teleprompter Natural.' });
               stopModal.classList.remove('show');
@@ -942,7 +1065,7 @@
             if (error && error.name === 'AbortError') return;
             console.warn('Compartilhamento nativo indisponível:', error);
           }
-          downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+          downloadBlob(lastRecordingBlob, getVideoFilename());
           stopModal.classList.remove('show');
           showToast('O compartilhamento de arquivos não está disponível aqui. O vídeo foi baixado para você anexar.');
           return;
@@ -957,7 +1080,7 @@
           }
         }
         if (hasVideo) {
-          downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+          downloadBlob(lastRecordingBlob, getVideoFilename());
           showToast('Compartilhamento indisponível neste navegador. Vídeo baixado; anexe-o no aplicativo desejado.');
         } else {
           try {
@@ -1053,7 +1176,7 @@
       $('recordBtn').addEventListener('click', startRecording);
       $('fullscreenBtn').addEventListener('click', openFullscreen);
       $('saveOutputBtn').addEventListener('click', () => {
-        if (lastRecordingBlob && lastRecordingBlob.size) downloadBlob(lastRecordingBlob, finalVideoName || 'gravacao-teleprompter.webm');
+        if (lastRecordingBlob && lastRecordingBlob.size) downloadBlob(lastRecordingBlob, getVideoFilename());
         else exportScript();
       });
       $('returnOutputBtn').addEventListener('click', () => {
