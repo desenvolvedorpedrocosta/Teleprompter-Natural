@@ -64,7 +64,8 @@
       overflow: hidden; overscroll-behavior: none; touch-action: pan-y;
     }
     .app-shell.css-fullscreen .topbar {
-      position: sticky; top: 0; z-index: 20; padding: 5px 0 8px;
+      /* Mantém o cabeçalho abaixo do notch/ilha dinâmica enquanto o app rola em tela cheia. */
+      position: sticky; top: max(10px, env(safe-area-inset-top, 0px)); z-index: 20; padding: 5px 0 8px;
       background: rgba(9,13,19,.97); backdrop-filter: blur(12px);
     }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
@@ -237,8 +238,9 @@
       .app-shell { padding: 14px 12px 24px; }
       .topbar { margin-bottom: 13px; }
       .workspace { display: flex; flex-direction: column; }
-      .stage-panel { order: 1; width: 100%; }
-      .editor-panel { order: 2; width: 100%; }
+      /* A sequência mobile segue o fluxo natural: preparar o roteiro antes de ler. */
+      .editor-panel { order: 1; width: 100%; }
+      .stage-panel { order: 2; width: 100%; }
       .stage { min-height: 440px; height: 61vh; max-height: 700px; margin: 10px; }
       .control-deck { margin: 0 10px 10px; }
       .panel-heading { padding: 15px 16px 13px; }
@@ -2437,7 +2439,7 @@
             recorder.ondataavailable = (event) => { if (event.data && event.data.size) chunks.push(event.data); };
             recorder.onerror = (event) => reject(event.error || new Error('Falha ao recodificar o trecho.'));
             recorder.onstop = () => {
-              const chunkType = chunks.find((chunk) => chunk.type)?.type || '';
+              const chunkType = chunks.find((chunk) => chunk && chunk.type)?.type || '';
               const chosenType = recorder.mimeType || chunkType || 'video/webm';
               const normalizedType = /mp4/i.test(chosenType) ? 'video/mp4' : /webm/i.test(chosenType) ? 'video/webm' : chosenType;
               const result = new Blob(chunks, { type: normalizedType });
