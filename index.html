@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#090d13">
   <meta name="description" content="Teleprompter Natural — leitura fluida, gravação opcional e roteiro salvo no próprio dispositivo.">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -366,15 +366,15 @@
       background: linear-gradient(145deg, rgba(120,213,194,.2), rgba(120,213,194,.045));
       box-shadow: 0 0 0 9px rgba(120,213,194,.035), 0 16px 55px rgba(53,185,157,.16), inset 0 1px 0 rgba(255,255,255,.12);
       transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
-      will-change: transform, opacity; animation: splash-logo-motion 1.8s ease-in-out infinite;
+      will-change: transform, opacity; animation: splash-logo-enter .92s cubic-bezier(.2,.75,.25,1) both;
     }
     .splash-logo svg { width: 36px; height: 36px; }
     .splash-title { color: #edf3f8; font-size: 23px; font-weight: 780; letter-spacing: -.045em; }
     .splash-title span { color: var(--accent); }
     .splash-subtitle { color: var(--muted); font-size: 11px; letter-spacing: .08em; }
-    @keyframes splash-logo-motion {
-      0%, 100% { opacity: .96; transform: translate3d(0, 0, 0) scale(1); }
-      50% { opacity: 1; transform: translate3d(0, -4px, 0) scale(1.035); }
+    @keyframes splash-logo-enter {
+      from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.94); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
     }
     @keyframes splash-rise { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
@@ -458,7 +458,7 @@
       .splash-logo {
         transform: translate3d(0, 0, 0); backface-visibility: hidden; -webkit-backface-visibility: hidden;
         transform-style: preserve-3d; will-change: transform, opacity;
-        animation: splash-logo-motion 1.8s ease-in-out infinite;
+        animation: splash-logo-enter .92s cubic-bezier(.2,.75,.25,1) both;
       }
       @keyframes splash-mobile-entry {
         from { opacity: 0; transform: translate3d(0, 9px, 0); }
@@ -617,6 +617,205 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
+  
+
+    /* Áreas seguras iOS: aplicação, tela cheia, splash e captura respeitam notch/ilha e barra inferior. */
+    html, body { min-height: 100%; }
+    .app-shell {
+      padding-top: max(14px, env(safe-area-inset-top, 0px));
+      padding-right: max(clamp(14px, 2.4vw, 34px), env(safe-area-inset-right, 0px));
+      padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+      padding-left: max(clamp(14px, 2.4vw, 34px), env(safe-area-inset-left, 0px));
+    }
+    .app-shell.css-fullscreen {
+      padding-top: max(10px, env(safe-area-inset-top, 0px));
+      padding-right: max(10px, env(safe-area-inset-right, 0px));
+      padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+      padding-left: max(10px, env(safe-area-inset-left, 0px));
+    }
+    .splash-screen {
+      padding-top: max(24px, env(safe-area-inset-top, 0px));
+      padding-right: max(24px, env(safe-area-inset-right, 0px));
+      padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+      padding-left: max(24px, env(safe-area-inset-left, 0px));
+    }
+    .auth-gate {
+      padding-top: max(20px, env(safe-area-inset-top, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+    }
+    @media (max-width: 820px) {
+      .app-shell {
+        padding-top: max(8px, env(safe-area-inset-top, 0px));
+        padding-right: max(8px, env(safe-area-inset-right, 0px));
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        padding-left: max(8px, env(safe-area-inset-left, 0px));
+      }
+    }
+    @media (max-width: 520px) {
+      .app-shell {
+        padding-top: max(6px, env(safe-area-inset-top, 0px));
+        padding-right: max(6px, env(safe-area-inset-right, 0px));
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        padding-left: max(6px, env(safe-area-inset-left, 0px));
+      }
+    }
+
+    /* Abertura do splash é uma única transição GPU-friendly, sem oscilação contínua. */
+    .splash-logo {
+      animation: splash-logo-enter .92s cubic-bezier(.2,.75,.25,1) both !important;
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      will-change: transform, opacity;
+    }
+
+    /* Modo dedicado de gravação: palco expansivo, câmera e roteiro em destaque, sem painéis de configuração. */
+    body.recording-mode {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
+      overflow: hidden; overscroll-behavior: none; background: #03070b;
+    }
+    body.recording-mode .app-shell {
+      position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column;
+      width: 100vw; height: 100vh; height: 100dvh; max-width: none; min-width: 0;
+      margin: 0; overflow: hidden; box-sizing: border-box;
+      padding-top: max(10px, env(safe-area-inset-top, 0px));
+      padding-right: max(10px, env(safe-area-inset-right, 0px));
+      padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+      padding-left: max(10px, env(safe-area-inset-left, 0px));
+      background: #03070b;
+    }
+    body.recording-mode .topbar,
+    body.recording-mode .editor-panel,
+    body.recording-mode .stage-panel > .panel-heading,
+    body.recording-mode .footnote,
+    body.recording-mode .stage-bottom-hint { display: none !important; }
+    body.recording-mode .workspace {
+      display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 0;
+      width: 100%; min-width: 0; min-height: 0; overflow: hidden;
+    }
+    body.recording-mode .stage-panel {
+      display: flex; flex: 1 1 auto; flex-direction: column; width: 100%; min-width: 0; min-height: 0;
+      overflow: hidden; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+    }
+    body.recording-mode .stage {
+      flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; max-height: none;
+      height: auto; margin: 0; border: 0; border-radius: 0;
+      background: #03070b;
+    }
+    body.recording-mode .camera-video { object-fit: contain; background: #03070b; }
+    body.recording-mode .camera-shade { background: linear-gradient(180deg, rgba(0,0,0,.13), rgba(0,0,0,.34)); }
+    body.recording-mode .camera-hint { display: none !important; }
+    body.recording-mode .camera-status { top: max(12px, env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); right: auto; }
+    body.recording-mode .prompter-viewport { inset: 0; }
+    body.recording-mode .script-content {
+      width: min(90%, 980px); max-width: 980px;
+      font-size: clamp(30px, var(--font-size, 38px), 54px);
+      line-height: 1.42; text-shadow: 0 2px 18px rgba(0,0,0,.92);
+    }
+    body.recording-mode .reading-guide { width: min(90%, 980px); opacity: .42; }
+    body.recording-mode .control-deck {
+      position: static; width: 0; height: 0; min-width: 0; margin: 0; padding: 0;
+      overflow: visible; border: 0; background: transparent; box-shadow: none;
+    }
+    body.recording-mode .transport-row,
+    body.recording-mode .workflow-actions,
+    body.recording-mode .utility-actions { display: contents; }
+    body.recording-mode .reading-action-group,
+    body.recording-mode .capture-action-group,
+    body.recording-mode .timer-box,
+    body.recording-mode .control-divider,
+    body.recording-mode .adjustments,
+    body.recording-mode #restartBtn { display: none !important; }
+    body.recording-mode #stopBtn {
+      display: inline-flex !important; position: fixed !important;
+      top: max(12px, env(safe-area-inset-top, 0px));
+      right: max(12px, env(safe-area-inset-right, 0px));
+      bottom: auto; left: auto; z-index: 10020;
+      min-width: 92px; min-height: 48px; padding: 0 16px;
+      border: 1px solid rgba(255,160,160,.85); border-radius: 13px;
+      color: #fff; background: linear-gradient(145deg, #c43d42, #8f2028);
+      box-shadow: 0 0 0 4px rgba(250,80,80,.18), 0 10px 30px rgba(0,0,0,.5);
+      font-size: 13px; font-weight: 900; letter-spacing: .06em;
+      transform: translate3d(0,0,0); pointer-events: auto; touch-action: manipulation;
+    }
+    body.recording-mode #stopBtn:hover { filter: brightness(1.12); }
+    .recording-hud {
+      display: none; position: absolute; z-index: 12;
+      left: max(10px, env(safe-area-inset-left, 0px));
+      right: max(10px, env(safe-area-inset-right, 0px));
+      bottom: max(10px, env(safe-area-inset-bottom, 0px));
+      align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 12px; border: 1px solid rgba(212,231,244,.16); border-radius: 16px;
+      background: rgba(4,9,14,.82); box-shadow: 0 12px 40px rgba(0,0,0,.42);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    body.recording-mode .recording-hud { display: flex; }
+    .recording-hud-info { display: grid; gap: 3px; min-width: 78px; }
+    .recording-hud-info span { color: #a9e9dc; font-size: 9px; font-weight: 900; letter-spacing: .15em; }
+    .recording-hud-info strong { color: #fff; font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+    .recording-hud-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; min-width: 0; }
+    .recording-speed-control { display: flex; align-items: center; gap: 6px; padding: 4px 7px; border: 1px solid rgba(255,255,255,.11); border-radius: 10px; color: #cbd8e2; background: rgba(255,255,255,.045); }
+    .recording-speed-control > span { font-size: 9px; color: #9eafbf; }
+    .recording-speed-control output { min-width: 48px; color: var(--accent); font-size: 10px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+    .recording-speed-control .step-btn { width: 27px; height: 27px; }
+    .recording-pause-btn { min-height: 36px; padding: 0 11px; white-space: nowrap; }
+    .recording-pause-btn:disabled { opacity: .55; cursor: default; }
+    .recording-countdown {
+      position: absolute; z-index: 10015; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      padding: max(20px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px))
+        max(24px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      background: rgba(2,6,10,.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+      text-align: center;
+    }
+    .recording-countdown[hidden] { display: none !important; }
+    .recording-countdown > span { color: #b9eade; font-size: 11px; font-weight: 900; letter-spacing: .22em; }
+    .recording-countdown > strong { display: block; color: #fff; font-size: clamp(110px, 28vw, 220px); line-height: .95; font-weight: 850; font-variant-numeric: tabular-nums; text-shadow: 0 10px 55px rgba(0,0,0,.65); }
+    .recording-countdown > p { margin: 5px 0 12px; color: rgba(238,246,251,.84); font-size: 13px; }
+    .recording-countdown .primary-btn { min-height: 44px; padding-inline: 18px; font-size: 12px; }
+    .countdown-pop { animation: countdown-pop .28s ease-out both; }
+    @keyframes countdown-pop { from { opacity: .25; transform: translate3d(0,8px,0) scale(.92); } to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
+    body.recording-mode #stopBtn { z-index: 10020; }
+    body.recording-mode .camera-status { z-index: 11; }
+
+    body.recording-mode .toast { bottom: calc(max(10px, env(safe-area-inset-bottom, 0px)) + 82px); right: max(12px, env(safe-area-inset-right, 0px)); }
+    @media (max-width: 380px) { body.recording-mode .toast { bottom: calc(max(10px, env(safe-area-inset-bottom, 0px)) + 116px); } }
+    @media (max-width: 600px) {
+      body.recording-mode .app-shell {
+        padding-top: max(8px, env(safe-area-inset-top, 0px));
+        padding-right: max(8px, env(safe-area-inset-right, 0px));
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        padding-left: max(8px, env(safe-area-inset-left, 0px));
+      }
+      .recording-hud {
+        left: max(7px, env(safe-area-inset-left, 0px));
+        right: max(7px, env(safe-area-inset-right, 0px));
+        bottom: max(7px, env(safe-area-inset-bottom, 0px));
+        padding: 8px; gap: 6px; border-radius: 13px;
+      }
+      .recording-hud-info { min-width: 62px; }
+      .recording-hud-info strong { font-size: 19px; }
+      .recording-hud-controls { gap: 5px; }
+      .recording-speed-control { gap: 4px; padding: 3px 5px; }
+      .recording-speed-control > span { display: none; }
+      .recording-speed-control output { min-width: 43px; font-size: 9px; }
+      .recording-speed-control .step-btn { width: 25px; height: 25px; }
+      .recording-pause-btn { min-height: 33px; padding: 0 8px; font-size: 10px; }
+      body.recording-mode #stopBtn { top: max(8px, env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); min-width: 82px; min-height: 43px; padding: 0 11px; font-size: 11px; }
+    }
+    @media (max-width: 380px) {
+      .recording-hud { align-items: flex-start; flex-direction: column; }
+      .recording-hud-controls { width: 100%; justify-content: space-between; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      body.recording-mode .app-shell { padding-top: max(5px, env(safe-area-inset-top, 0px)); padding-bottom: max(5px, env(safe-area-inset-bottom, 0px)); }
+      .recording-hud { padding: 5px 8px; }
+      .recording-hud-info strong { font-size: 16px; }
+      .recording-countdown > strong { font-size: min(34vh, 150px); }
+    }
+
   </style>
 </head>
 <body>
@@ -762,6 +961,29 @@
             <span>Digite ou carregue um roteiro. Depois, pressione Iniciar para acompanhar a rolagem.</span>
           </div>
           <div class="stage-bottom-hint">A barra de espaço inicia ou pausa · F alterna tela cheia</div>
+          <div class="recording-hud" id="recordingHud" aria-live="polite">
+            <div class="recording-hud-info">
+              <span id="recordingStateLabel">PREPARANDO</span>
+              <strong id="recordingClock">00:00</strong>
+            </div>
+            <div class="recording-hud-controls">
+              <div class="recording-speed-control" aria-label="Ajuste rápido da velocidade">
+                <span>Velocidade</span>
+                <button class="step-btn" id="recordSpeedDown" type="button" aria-label="Diminuir velocidade durante a gravação">−</button>
+                <output id="recordSpeedValue">28 px/s</output>
+                <button class="step-btn" id="recordSpeedUp" type="button" aria-label="Aumentar velocidade durante a gravação">+</button>
+              </div>
+              <button class="secondary-btn recording-pause-btn" id="recordPauseBtn" type="button" disabled>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg> Pausar gravação
+              </button>
+            </div>
+          </div>
+          <div class="recording-countdown" id="recordingCountdown" hidden aria-live="assertive">
+            <span>PREPARE-SE</span>
+            <strong id="countdownNumber">5</strong>
+            <p>A gravação começará automaticamente</p>
+            <button class="primary-btn" id="skipCountdownBtn" type="button">Pular contagem e gravar agora</button>
+          </div>
         </div>
 
         <div class="control-deck">
@@ -824,6 +1046,10 @@
             <div class="setting">
               <div class="setting-head"><label for="qualitySelect">Qualidade de gravação</label></div>
               <select id="qualitySelect"><option value="720">720p · recomendada</option><option value="1080">1080p · alta</option></select>
+            </div>
+            <div class="setting">
+              <div class="setting-head"><label for="countdownToggle">Preparação da gravação</label></div>
+              <label class="toggle-line"><input type="checkbox" id="countdownToggle" checked> Contagem regressiva de 5 segundos</label>
             </div>
             <div class="setting">
               <div class="setting-head"><label>Espelhamento</label></div>
@@ -958,6 +1184,15 @@
       let isExportingVideo = false;
       let recordingStartedAt = 0;
       let isRecording = false;
+      let isRecordingPaused = false;
+      let recordingModeActive = false;
+      let countdownActive = false;
+      let countdownInterval = 0;
+      let countdownValue = 5;
+      let recordingClockInterval = 0;
+      let recordingClockStartedAt = 0;
+      let recordingClockPausedTotalMs = 0;
+      let recordingClockPauseStartedAt = 0;
       let pendingStopModal = false;
       let finalVideoName = '';
       let objectUrlForDownload = null;
@@ -969,7 +1204,8 @@
         position: 30,
         highlight: '#f4d06f',
         mirror: false,
-        quality: '720'
+        quality: '720',
+        countdown: true
       };
 
       function showToast(message, duration = 3000) {
@@ -1526,7 +1762,10 @@
       }
 
       function updateReadPosition() {
-        const offset = Math.round(stage.clientHeight * Number($('positionRange').value) / 100);
+        // No modo de gravação, mantém a linha de leitura na faixa superior, próxima à lente.
+        const configuredPosition = Number($('positionRange').value);
+        const readPosition = recordingModeActive ? Math.min(configuredPosition, 22) : configuredPosition;
+        const offset = Math.round(stage.clientHeight * readPosition / 100);
         stage.style.setProperty('--read-offset', `${offset}px`);
         stage.style.setProperty('--column-width', `${$('widthRange').value}%`);
         scriptContent.style.setProperty('--column-width', `${$('widthRange').value}%`);
@@ -1541,6 +1780,7 @@
         $('highlightColor').value = merged.highlight;
         $('mirrorToggle').checked = Boolean(merged.mirror);
         $('qualitySelect').value = merged.quality === '1080' ? '1080' : '720';
+        $('countdownToggle').checked = merged.countdown !== false;
         updateControlLabels();
       }
 
@@ -1552,7 +1792,8 @@
           position: Number($('positionRange').value),
           highlight: $('highlightColor').value,
           mirror: $('mirrorToggle').checked,
-          quality: $('qualitySelect').value
+          quality: $('qualitySelect').value,
+          countdown: $('countdownToggle').checked
         };
       }
 
@@ -1566,6 +1807,7 @@
         const width = Number($('widthRange').value);
         const position = Number($('positionRange').value);
         $('speedValue').textContent = `${speed} px/s`;
+        if ($('recordSpeedValue')) $('recordSpeedValue').textContent = `${speed} px/s`;
         $('fontValue').textContent = `${font} px`;
         $('widthValue').textContent = `${width}%`;
         $('positionValue').textContent = `${position}%`;
@@ -1822,8 +2064,142 @@
         showToast('Câmera ativada. A prévia não é gravada até você iniciar a gravação.');
       }
 
+      function enterRecordingMode() {
+        if (recordingModeActive) return;
+        // Limpa avisos transitórios antes de expandir o palco para uma gravação sem distrações.
+        window.clearTimeout(toastTimer);
+        toast.classList.remove('show');
+        recordingModeActive = true;
+        document.body.classList.add('recording-mode');
+        appShell.classList.add('recording-mode');
+        $('recordPauseBtn').disabled = true;
+        $('recordPauseBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg> Pausar gravação';
+        $('recordingStateLabel').textContent = 'PREPARANDO';
+        $('recordingClock').textContent = '00:00';
+        $('recordSpeedValue').textContent = `${$('speedRange').value} px/s`;
+        $('stopBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> CANCELAR';
+        $('stopBtn').setAttribute('aria-label', 'Cancelar preparação da gravação');
+        updateReadPosition();
+        window.requestAnimationFrame(updateReadPosition);
+      }
+
+      function exitRecordingMode() {
+        if (!recordingModeActive) return;
+        recordingModeActive = false;
+        document.body.classList.remove('recording-mode');
+        appShell.classList.remove('recording-mode');
+        $('stopBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> STOP';
+        $('stopBtn').setAttribute('aria-label', 'Parar e abrir opções');
+        updateReadPosition();
+      }
+
+      function clearRecordingCountdown() {
+        if (countdownInterval) window.clearInterval(countdownInterval);
+        countdownInterval = 0;
+        countdownActive = false;
+        $('recordingCountdown').hidden = true;
+        $('recordBtn').disabled = false;
+      }
+
+      function beginRecordingCountdown() {
+        enterRecordingMode();
+        if (!$('countdownToggle').checked) {
+          beginRecordingNow();
+          return;
+        }
+        countdownActive = true;
+        countdownValue = 5;
+        $('recordingCountdown').hidden = false;
+        $('countdownNumber').textContent = '5';
+        $('countdownNumber').classList.remove('countdown-pop');
+        void $('countdownNumber').offsetWidth;
+        $('countdownNumber').classList.add('countdown-pop');
+        $('recordingStateLabel').textContent = 'CONTAGEM';
+        $('recordBtn').disabled = true;
+        countdownInterval = window.setInterval(() => {
+          countdownValue -= 1;
+          if (countdownValue <= 0) {
+            clearRecordingCountdown();
+            beginRecordingNow();
+            return;
+          }
+          $('countdownNumber').textContent = String(countdownValue);
+          $('countdownNumber').classList.remove('countdown-pop');
+          void $('countdownNumber').offsetWidth;
+          $('countdownNumber').classList.add('countdown-pop');
+        }, 1000);
+      }
+
+      function skipRecordingCountdown() {
+        if (!countdownActive) return;
+        clearRecordingCountdown();
+        beginRecordingNow();
+      }
+
+      function updateRecordingClock() {
+        if (!recordingClockStartedAt) return;
+        const now = isRecordingPaused ? recordingClockPauseStartedAt : Date.now();
+        const elapsed = Math.max(0, now - recordingClockStartedAt - recordingClockPausedTotalMs);
+        $('recordingClock').textContent = formatClock(elapsed);
+      }
+
+      function startRecordingClock() {
+        recordingClockStartedAt = Date.now();
+        recordingClockPausedTotalMs = 0;
+        recordingClockPauseStartedAt = 0;
+        window.clearInterval(recordingClockInterval);
+        updateRecordingClock();
+        recordingClockInterval = window.setInterval(updateRecordingClock, 200);
+      }
+
+      function stopRecordingClock() {
+        updateRecordingClock();
+        window.clearInterval(recordingClockInterval);
+        recordingClockInterval = 0;
+        recordingClockStartedAt = 0;
+        recordingClockPausedTotalMs = 0;
+        recordingClockPauseStartedAt = 0;
+      }
+
+      function toggleRecordingPause() {
+        if (!mediaRecorder || !isRecording) return;
+        try {
+          if (!isRecordingPaused && mediaRecorder.state === 'recording') {
+            mediaRecorder.pause();
+            isRecordingPaused = true;
+            recordingClockPauseStartedAt = Date.now();
+            pauseReading();
+            $('recordingStateLabel').textContent = 'PAUSADO';
+            $('recordingBadge').classList.remove('active');
+            $('recordPauseBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m8 5 12 7-12 7z"/></svg> Retomar gravação';
+            updateRecordingClock();
+          } else if (isRecordingPaused && mediaRecorder.state === 'paused') {
+            mediaRecorder.resume();
+            recordingClockPausedTotalMs += Date.now() - recordingClockPauseStartedAt;
+            recordingClockPauseStartedAt = 0;
+            isRecordingPaused = false;
+            $('recordingStateLabel').textContent = 'GRAVANDO';
+            $('recordingBadge').classList.add('active');
+            $('recordPauseBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg> Pausar gravação';
+            if (!isPlaying) startReading();
+            updateRecordingClock();
+          }
+        } catch (error) {
+          console.error('Não foi possível pausar/retomar a gravação:', error);
+          showToast('O navegador não conseguiu alterar o estado da gravação.', 4200);
+        }
+      }
+
+      function adjustRecordingSpeed(delta) {
+        const speedRange = $('speedRange');
+        speedRange.value = Math.max(Number(speedRange.min), Math.min(Number(speedRange.max), Number(speedRange.value) + delta));
+        updateControlLabels();
+        $('recordSpeedValue').textContent = `${speedRange.value} px/s`;
+        persistSettings();
+      }
+
       async function startRecording() {
-        if (isRecording) return;
+        if (isRecording || countdownActive) return;
         if (!window.MediaRecorder) {
           showToast('A gravação não é compatível com este navegador. Você ainda pode usar o teleprompter normalmente.', 5000);
           return;
@@ -1832,6 +2208,13 @@
           await activateCamera();
           if (!mediaStream) return;
         }
+        // Mantém o roteiro parado durante a preparação para começar junto com a gravação.
+        if (isPlaying) pauseReading();
+        beginRecordingCountdown();
+      }
+
+      function beginRecordingNow() {
+        if (isRecording || !mediaStream) return;
         try {
           const options = { videoBitsPerSecond: $('qualitySelect').value === '1080' ? 4500000 : 2500000, audioBitsPerSecond: 128000 };
           mediaRecorder = createMediaRecorder(mediaStream, options);
@@ -1849,6 +2232,7 @@
             showToast('O navegador encontrou um erro durante a gravação.', 4500);
           };
           mediaRecorder.onstop = () => {
+            stopRecordingClock();
             const chunkType = recordedChunks.find((chunk) => chunk && chunk.type)?.type || '';
             const recorderType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : '';
             const detectedType = recorderType || chunkType || 'video/webm';
@@ -1859,8 +2243,14 @@
             const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             finalVideoName = `teleprompter-natural-${stamp}.${extension}`;
             isRecording = false;
+            isRecordingPaused = false;
             document.body.classList.remove('recording-active');
             $('recordingBadge').classList.remove('active');
+            $('recordPauseBtn').disabled = true;
+            $('recordPauseBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg> Pausar gravação';
+            $('recordingStateLabel').textContent = 'FINALIZADA';
+            exitRecordingMode();
+            $('recordBtn').disabled = false;
             $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg> Gravar vídeo';
             stopCameraStream();
             $('cameraNote').textContent = lastRecordingBlob.size ? `Gravação pronta · ${(lastRecordingBlob.size / (1024 * 1024)).toFixed(1).replace('.', ',')} MB` : 'Gravação finalizada sem dados de vídeo.';
@@ -1873,15 +2263,22 @@
           };
           mediaRecorder.start(1000);
           isRecording = true;
+          isRecordingPaused = false;
           document.body.classList.add('recording-active');
           recordingStartedAt = Date.now();
+          startRecordingClock();
           $('recordingBadge').classList.add('active');
-          $('recordBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg> Gravando vídeo…';
-          $('cameraNote').textContent = 'Gravando vídeo e áudio. Pressione STOP para finalizar e escolher o que fazer.';
+          $('recordingStateLabel').textContent = 'GRAVANDO';
+          $('recordPauseBtn').disabled = false;
+          $('recordPauseBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg> Pausar gravação';
+          $('stopBtn').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> STOP';
+          $('stopBtn').setAttribute('aria-label', 'Parar gravação');
+          $('cameraNote').textContent = 'Gravando vídeo e áudio. Pressione STOP para finalizar e revisar o clipe.';
           if (!isPlaying) startReading();
-          showToast('Gravação iniciada. A rolagem acompanha a leitura.');
         } catch (error) {
           console.error('Não foi possível iniciar a gravação:', error);
+          clearRecordingCountdown();
+          exitRecordingMode();
           showToast('Não foi possível iniciar a gravação neste formato. Tente novamente ou use apenas o teleprompter.', 5000);
           isRecording = false;
           document.body.classList.remove('recording-active');
@@ -2194,6 +2591,13 @@
       }
 
       function stopEverything() {
+        if (countdownActive) {
+          clearRecordingCountdown();
+          exitRecordingMode();
+          $('recordBtn').disabled = false;
+          showToast('Contagem cancelada. A câmera continua disponível para uma nova tentativa.');
+          return;
+        }
         pauseReading();
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           pendingStopModal = true;
@@ -2410,7 +2814,7 @@
         event.target.value = '';
       });
 
-      ['speedRange', 'fontRange', 'widthRange', 'positionRange', 'highlightColor', 'mirrorToggle', 'qualitySelect'].forEach((id) => {
+      ['speedRange', 'fontRange', 'widthRange', 'positionRange', 'highlightColor', 'mirrorToggle', 'qualitySelect', 'countdownToggle'].forEach((id) => {
         $(id).addEventListener('input', () => { updateControlLabels(); persistSettings(); });
         $(id).addEventListener('change', () => { updateControlLabels(); persistSettings(); });
       });
@@ -2427,6 +2831,10 @@
       $('stopBtn').addEventListener('click', stopEverything);
       $('cameraBtn').addEventListener('click', activateCamera);
       $('recordBtn').addEventListener('click', startRecording);
+      $('recordPauseBtn').addEventListener('click', toggleRecordingPause);
+      $('recordSpeedDown').addEventListener('click', () => adjustRecordingSpeed(-2));
+      $('recordSpeedUp').addEventListener('click', () => adjustRecordingSpeed(2));
+      $('skipCountdownBtn').addEventListener('click', skipRecordingCountdown);
       $('fullscreenBtn').addEventListener('click', openFullscreen);
       $('pinInput').addEventListener('input', () => {
         $('pinInput').value = $('pinInput').value.replace(/\D/g, '').slice(0, 4);
